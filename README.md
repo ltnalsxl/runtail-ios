@@ -40,3 +40,31 @@
 git clone https://github.com/yourname/runtail-ios.git
 cd runtail-ios
 open RunTail.xcodeproj
+```
+
+### ⚙️ Requirements / 요구 사항
+
+- macOS Monterey 이상
+- Xcode 15+
+- Firebase `GoogleService-Info.plist` 등록 필요
+- iOS 시뮬레이터 or 실기기
+
+---
+
+## 📁 Folder Structure / 폴더 구조
+
+```
+RunTail/
+├── Views/
+├── Models/
+├── Services/
+├── Resources/
+├── GoogleService-Info.plist  # gitignore로 제외됨
+```
+
+---
+
+## 📄 License / 라이선스
+
+MIT License.  
+자세한 내용은 [LICENSE](./LICENSE)를 참고하세요.
