@@ -60,62 +60,235 @@ struct MapView: View {
     @State private var weeklyDistance: Double = 0
     @State private var todayDistance: Double = 0
     
-    // 탐색 카테고리
+    // 로그아웃 관련 상태 추가
+    @State private var showLogoutAlert = false
+    @State private var isLoggedOut = false
+    
+    // 내비게이션을 위한 환경 객체 추가
+    @Environment(\.presentationMode) var presentationMode
+    
+    // 탐색 카테고리 - 색상을 테마와 맞게 업데이트
     let exploreCategories = [
-        ExploreCategory(title: "인기 코스", icon: "star.fill", color: Color.mint),
-        ExploreCategory(title: "내 근방", icon: "location.fill", color: Color.teal),
-        ExploreCategory(title: "30분 코스", icon: "clock.fill", color: Color.cyan)
+        ExploreCategory(title: "인기 코스", icon: "star.fill", color: Color(red: 89/255, green: 86/255, blue: 214/255)),
+        ExploreCategory(title: "내 근방", icon: "location.fill", color: Color(red: 45/255, green: 104/255, blue: 235/255)),
+        ExploreCategory(title: "30분 코스", icon: "clock.fill", color: Color(red: 0/255, green: 122/255, blue: 255/255))
     ]
     
-    // 앱 테마 색상
-    let themeColor = Color(red: 0/255, green: 179/255, blue: 149/255)
+    // 앱 테마 색상 - 그라데이션 적용을 위한 수정
+    let themeColor = Color(red: 89/255, green: 86/255, blue: 214/255) // #5956D6 (퍼플)
+    
+    // UI 요소에 적용할 그라데이션
+    let themeGradient = LinearGradient(
+        gradient: Gradient(colors: [
+            Color(red: 89/255, green: 86/255, blue: 214/255), // #5956D6 (퍼플)
+            Color(red: 0/255, green: 122/255, blue: 255/255)  // #007AFF (블루)
+        ]),
+        startPoint: .leading,
+        endPoint: .trailing
+    )
     
     // 초기화 및 데이터 로드
     var body: some View {
-        ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                // 상단 상태 바
-                statusBar
+        NavigationView {
+            ZStack(alignment: .bottom) {
+                // 메인 콘텐츠
+                TabView(selection: $selectedTab) {
+                    // 홈 탭
+                    homeTab
+                        .tag(0)
+                    
+                    // 탐색 탭
+                    Text("탐색 화면")
+                        .tag(1)
+                    
+                    // 활동 탭
+                    Text("활동 화면")
+                        .tag(2)
+                    
+                    // 프로필 탭 - 로그아웃 기능 추가
+                    profileTab
+                        .tag(3)
+                }
+                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 
-                // 지도 영역 - 상단 절반
-                mapSection
+                // 하단 탭 바
+                bottomTabBar
                 
-                // 통계 바
-                statsBar
-                
-                // 스크롤 가능한 컨텐츠 영역
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // 최근 활동 섹션
-                        recentActivitiesSection
-                        
-                        // 탐색 섹션
-                        exploreSection
-                    }
-                    .padding(.bottom, 60) // 하단 탭바 공간 확보
+                // 로그인 화면으로 돌아가기 위한 NavigationLink
+                NavigationLink(destination: ContentView().navigationBarHidden(true),
+                              isActive: $isLoggedOut) {
+                    EmptyView()
                 }
             }
-            
-            // 하단 탭 바
-            bottomTabBar
-        }
-        .edgesIgnoringSafeArea(.bottom)
-        .onAppear {
-            // 현재 로그인한 사용자 정보 가져오기
-            if let user = Auth.auth().currentUser {
-                userEmail = user.email ?? ""
-                userId = user.uid
-                
-                // 사용자 데이터 로드
-                loadUserData()
-                
-                // 최근 러닝 데이터 로드
-                loadRecentRuns()
-                
-                // 내 코스 데이터 로드
-                loadMyCourses()
+            .edgesIgnoringSafeArea(.bottom)
+            .navigationBarHidden(true)
+            .onAppear {
+                // 현재 로그인한 사용자 정보 가져오기
+                if let user = Auth.auth().currentUser {
+                    userEmail = user.email ?? ""
+                    userId = user.uid
+                    
+                    // 사용자 데이터 로드
+                    loadUserData()
+                    
+                    // 최근 러닝 데이터 로드
+                    loadRecentRuns()
+                    
+                    // 내 코스 데이터 로드
+                    loadMyCourses()
+                }
+            }
+            // 로그아웃 확인 알림
+            .alert(isPresented: $showLogoutAlert) {
+                Alert(
+                    title: Text("로그아웃"),
+                    message: Text("정말 로그아웃 하시겠습니까?"),
+                    primaryButton: .destructive(Text("로그아웃")) {
+                        logout()
+                    },
+                    secondaryButton: .cancel(Text("취소"))
+                )
             }
         }
+    }
+    
+    // 로그아웃 함수
+    func logout() {
+        do {
+            try Auth.auth().signOut()
+            isLoggedOut = true
+        } catch {
+            print("로그아웃 오류: \(error.localizedDescription)")
+        }
+    }
+    
+    // 홈 탭 뷰
+    var homeTab: some View {
+        VStack(spacing: 0) {
+            // 상단 상태 바
+            statusBar
+            
+            // 지도 영역 - 상단 절반
+            mapSection
+            
+            // 통계 바
+            statsBar
+            
+            // 스크롤 가능한 컨텐츠 영역
+            ScrollView {
+                VStack(spacing: 16) {
+                    // 최근 활동 섹션
+                    recentActivitiesSection
+                    
+                    // 탐색 섹션
+                    exploreSection
+                }
+                .padding(.bottom, 60) // 하단 탭바 공간 확보
+            }
+        }
+    }
+    
+    // 프로필 탭 뷰 - 로그아웃 기능 포함
+    var profileTab: some View {
+        VStack(spacing: 20) {
+            // 상단 상태 바
+            statusBar
+            
+            // 프로필 헤더
+            VStack(spacing: 12) {
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(themeColor)
+                    .padding(.top, 20)
+                
+                Text(userEmail)
+                    .font(.headline)
+                
+                Text("RunTail 러너")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+            
+            Divider()
+                .padding(.horizontal)
+            
+            // 설정 섹션
+            VStack(spacing: 5) {
+                Text("설정")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                
+                // 설정 옵션들
+                Button(action: {
+                    // 프로필 설정 액션
+                }) {
+                    HStack {
+                        Image(systemName: "person.fill")
+                            .frame(width: 24, height: 24)
+                        Text("프로필 수정")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                }
+                
+                Button(action: {
+                    // 알림 설정 액션
+                }) {
+                    HStack {
+                        Image(systemName: "bell.fill")
+                            .frame(width: 24, height: 24)
+                        Text("알림 설정")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                }
+                
+                Button(action: {
+                    // 개인정보 설정 액션
+                }) {
+                    HStack {
+                        Image(systemName: "lock.fill")
+                            .frame(width: 24, height: 24)
+                        Text("개인정보 설정")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                }
+                
+                // 로그아웃 버튼
+                Button(action: {
+                    showLogoutAlert = true
+                }) {
+                    HStack {
+                        Image(systemName: "arrow.right.square")
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.red)
+                        Text("로그아웃")
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                }
+            }
+            .padding()
+            
+            Spacer()
+        }
+        .background(Color(UIColor.systemGroupedBackground))
     }
     
     // MARK: - 데이터 로드 함수
@@ -300,7 +473,7 @@ struct MapView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(themeColor)
+        .background(themeGradient) // 그라데이션 적용
         .foregroundColor(.white)
     }
     
@@ -406,7 +579,7 @@ struct MapView: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
-                .background(themeColor)
+                .background(themeGradient) // 그라데이션 적용
                 .foregroundColor(.white)
                 .cornerRadius(16)
                 .shadow(color: themeColor.opacity(0.3), radius: 10, x: 0, y: 4)
@@ -463,10 +636,10 @@ struct MapView: View {
                         HStack {
                             ZStack {
                                 Circle()
-                                    .fill(Color.mint.opacity(0.1))
+                                    .fill(themeColor.opacity(0.1))
                                     .frame(width: 40, height: 40)
                                 Image(systemName: "map.fill")
-                                    .foregroundColor(.mint)
+                                    .foregroundColor(themeColor)
                             }
                             
                             VStack(alignment: .leading) {
@@ -656,7 +829,6 @@ struct MapView: View {
             ForEach(0..<4) { index in
                 Button(action: {
                     selectedTab = index
-                    // 탭 전환 로직 (필요시 추가)
                 }) {
                     VStack(spacing: 4) {
                         Image(systemName: tabIcon(index))
@@ -678,81 +850,81 @@ struct MapView: View {
     // MARK: - 유틸리티 함수
     
     // 탭 아이콘
-    func tabIcon(_ index: Int) -> String {
-        switch index {
-        case 0: return "house.fill"
-        case 1: return "map.fill"
-        case 2: return "chart.bar.fill"
-        case 3: return "person.fill"
-        default: return ""
-        }
-    }
-    
-    // 탭 제목
-    func tabTitle(_ index: Int) -> String {
-        switch index {
-        case 0: return "홈"
-        case 1: return "탐색"
-        case 2: return "활동"
-        case 3: return "프로필"
-        default: return ""
-        }
-    }
-    
-    // 코스 제목 가져오기
-    func getCourseTitle(courseId: String) -> String {
-        // 내 코스 중에서 찾기
-        if let course = myCourses.first(where: { $0.id == courseId }) {
-            return course.title
+        func tabIcon(_ index: Int) -> String {
+            switch index {
+            case 0: return "house.fill"
+            case 1: return "map.fill"
+            case 2: return "chart.bar.fill"
+            case 3: return "person.fill"
+            default: return ""
+            }
         }
         
-        // 코스 ID가 없거나 찾을 수 없는 경우 기본값
-        return "자유 러닝"
-    }
-    
-    // 좌표 배열로부터 거리 계산
-    func calculateDistance(coordinates: [CLLocationCoordinate2D]) -> String {
-        // 실제로는 좌표 사이의 거리를 계산해야 함
-        // 간단한 구현을 위해 좌표 개수에 비례한 값 반환
-        let distance = Double(coordinates.count) * 10 // 예시 값
-        return formatDistance(distance)
-    }
-    
-    // 거리 형식 지정
-    func formatDistance(_ distance: Double) -> String {
-        let distanceInKm = distance / 1000
-        if distanceInKm < 1 {
-            return String(format: "%.0fm", distance)
-        } else {
-            return String(format: "%.1fkm", distanceInKm)
+        // 탭 제목
+        func tabTitle(_ index: Int) -> String {
+            switch index {
+            case 0: return "홈"
+            case 1: return "탐색"
+            case 2: return "활동"
+            case 3: return "프로필"
+            default: return ""
+            }
         }
-    }
-    
-    // 시간 형식 지정
-    func formatDuration(_ seconds: Int) -> String {
-        let minutes = seconds / 60
-        let remainingSeconds = seconds % 60
         
-        if minutes < 60 {
-            return "\(minutes)분 \(remainingSeconds)초"
-        } else {
-            let hours = minutes / 60
-            let remainingMinutes = minutes % 60
-            return "\(hours)시간 \(remainingMinutes)분"
+        // 코스 제목 가져오기
+        func getCourseTitle(courseId: String) -> String {
+            // 내 코스 중에서 찾기
+            if let course = myCourses.first(where: { $0.id == courseId }) {
+                return course.title
+            }
+            
+            // 코스 ID가 없거나 찾을 수 없는 경우 기본값
+            return "자유 러닝"
+        }
+        
+        // 좌표 배열로부터 거리 계산
+        func calculateDistance(coordinates: [CLLocationCoordinate2D]) -> String {
+            // 실제로는 좌표 사이의 거리를 계산해야 함
+            // 간단한 구현을 위해 좌표 개수에 비례한 값 반환
+            let distance = Double(coordinates.count) * 10 // 예시 값
+            return formatDistance(distance)
+        }
+        
+        // 거리 형식 지정
+        func formatDistance(_ distance: Double) -> String {
+            let distanceInKm = distance / 1000
+            if distanceInKm < 1 {
+                return String(format: "%.0fm", distance)
+            } else {
+                return String(format: "%.1fkm", distanceInKm)
+            }
+        }
+        
+        // 시간 형식 지정
+        func formatDuration(_ seconds: Int) -> String {
+            let minutes = seconds / 60
+            let remainingSeconds = seconds % 60
+            
+            if minutes < 60 {
+                return "\(minutes)분 \(remainingSeconds)초"
+            } else {
+                let hours = minutes / 60
+                let remainingMinutes = minutes % 60
+                return "\(hours)시간 \(remainingMinutes)분"
+            }
+        }
+        
+        // 날짜 형식 지정
+        func formatDate(_ date: Date) -> String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy.MM.dd"
+            return formatter.string(from: date)
         }
     }
-    
-    // 날짜 형식 지정
-    func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy.MM.dd"
-        return formatter.string(from: date)
-    }
-}
 
-// 미리보기
-struct MapView_Previews: PreviewProvider {
-    static var previews: some View {
-        MapView()
+    // 미리보기
+    struct MapView_Previews: PreviewProvider {
+        static var previews: some View {
+            MapView()
+        }
     }
-}

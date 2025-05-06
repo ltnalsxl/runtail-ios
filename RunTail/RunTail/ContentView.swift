@@ -15,8 +15,18 @@ struct ContentView: View {
     // 테스트 계정 이메일만 허용
     let allowedEmail = "fltnadls1011@gmail.com"
     
-    // 앱 테마 색상
-    let themeColor = Color(red: 0/255, green: 179/255, blue: 149/255)
+    // 앱 테마 색상 - 그라데이션 적용을 위한 수정
+    let themeColor = Color(red: 89/255, green: 86/255, blue: 214/255) // #5956D6 (퍼플)
+    
+    // UI 요소에 적용할 그라데이션
+    let themeGradient = LinearGradient(
+        gradient: Gradient(colors: [
+            Color(red: 89/255, green: 86/255, blue: 214/255), // #5956D6 (퍼플)
+            Color(red: 0/255, green: 122/255, blue: 255/255)  // #007AFF (블루)
+        ]),
+        startPoint: .leading,
+        endPoint: .trailing
+    )
     
     var body: some View {
         NavigationView {
@@ -29,7 +39,7 @@ struct ContentView: View {
                     Text("RunTail")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                        .foregroundColor(themeColor)
+                        .foregroundStyle(themeGradient) // 그라데이션 적용
                         .padding(.bottom, 20)
                     
                     // 로그인 폼
@@ -54,7 +64,7 @@ struct ContentView: View {
                         .background(Color(UIColor.secondarySystemBackground))
                         .cornerRadius(10)
                         
-                        // 로그인 버튼
+                        // 로그인 버튼 - 그라데이션 적용
                         Button(action: loginUser) {
                             if isLoading {
                                 ProgressView()
@@ -68,8 +78,9 @@ struct ContentView: View {
                             }
                         }
                         .padding()
-                        .background(themeColor)
+                        .background(themeGradient) // 그라데이션 적용
                         .cornerRadius(10)
+                        .shadow(color: themeColor.opacity(0.3), radius: 5, x: 0, y: 2)
                         .disabled(isLoading)
                         
                         // 로그인 메시지
