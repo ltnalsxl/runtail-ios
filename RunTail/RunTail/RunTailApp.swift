@@ -6,16 +6,14 @@
 //
 
 import SwiftUI
-import Firebase // 꼭 추가해 주세요
+import Firebase
 
 @main
 struct RunTailApp: App {
-    // Firebase 초기화
     init() {
         FirebaseApp.configure()
-        print("✅ Firebase 초기화 완료")
     }
-
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
