@@ -165,37 +165,29 @@ class FirebaseService {
                     let data = document.data()
                     
                     // 좌표 배열 파싱
-                    var coordinates: [CLLocationCoordinate2D] = []
                     if let coordsData = data["coordinates"] as? [[String: Any]] {
-                        for point in coordsData {
-                            if let lat = point["lat"] as? Double, let lng = point["lng"] as? Double {
-                                coordinates.append(CLLocationCoordinate2D(latitude: lat, longitude: lng))
-                            }
-                        }
+                        // 날짜 파싱
+                        let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                        
+                        // 코스 객체 생성
+                        let course = Course(
+                            id: document.documentID,
+                            title: data["title"] as? String ?? "무제 코스",
+                            distance: data["distance"] as? Double ?? 0,
+                            coordinates: coordsData.map { point in
+                                Coordinate(
+                                    lat: point["lat"] as? Double ?? 0.0,
+                                    lng: point["lng"] as? Double ?? 0.0,
+                                    timestamp: point["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970
+                                )
+                            },
+                            createdAt: timestamp,
+                            createdBy: data["createdBy"] as? String ?? "",
+                            isPublic: data["isPublic"] as? Bool ?? false
+                        )
+                        
+                        courses.append(course)
                     }
-                    
-                    // 날짜 파싱
-                    let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                    
-                    // 코스 객체 생성
-                    // 코스 객체 생성에서
-                    let course = Course(
-                        id: document.documentID,
-                        title: data["title"] as? String ?? "무제 코스",
-                        distance: data["distance"] as? Double ?? 0,
-                        coordinates: coordsData.map { point in
-                            Coordinate(
-                                lat: point["lat"] as? Double ?? 0.0,
-                                lng: point["lng"] as? Double ?? 0.0,
-                                timestamp: point["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970
-                            )
-                        },
-                        createdAt: timestamp,
-                        createdBy: data["createdBy"] as? String ?? "",
-                        isPublic: data["isPublic"] as? Bool ?? false
-                    )
-                    
-                    courses.append(course)
                 }
                 
                 completion(courses)

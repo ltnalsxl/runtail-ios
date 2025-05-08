@@ -98,7 +98,7 @@ struct CourseDetailView: View {
             CourseSummarySheet(
                 course: course,
                 elevationData: elevationData,
-                averagePace: viewModel.getUserAveragePace(), // 이 메서드는 MapViewModel에 추가해야 함
+                averagePace: self.$viewModel.getUserAveragePace,
                 onDismiss: { showSummarySheet = false },
                 onStartRunning: startRunningThisCourse
             )
@@ -150,9 +150,7 @@ struct CourseDetailView: View {
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
-                        lineWidth: 4,
-                        lineCap: .round,
-                        lineJoin: .round
+                        lineWidth: 4
                     )
                     
                     // 1km 마다 거리 표시
@@ -284,7 +282,7 @@ struct CourseDetailView: View {
             )
             
             // 시간 카드 (예상 시간 - 사용자 평균 페이스 기반)
-            let estimatedTime = Int(course.distance / 1000 * viewModel.getUserAveragePace())
+            let estimatedTime = Int(course.distance / 1000 * self.$viewModel.getUserAveragePace)
             StatisticCard(
                 title: "예상 시간",
                 value: Formatters.formatDuration(estimatedTime),
@@ -549,6 +547,7 @@ struct CourseDetailView: View {
                 let ratio = (Double(currentKm) * 1000 - (distance - segmentDistance)) / segmentDistance
                 let interpolatedLat = lastCoord.latitude + (currentCoord.latitude - lastCoord.latitude) * ratio
                 let interpolatedLng = lastCoord.longitude + (currentCoord.longitude - lastCoord.longitude) * ratio
+
                 
                 markers.append((currentKm, CLLocationCoordinate2D(
                     latitude: interpolatedLat,
@@ -641,9 +640,9 @@ struct CourseDetailView: View {
                 
                 // 0.5초 후 러닝 시작 (뷰 전환 후)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    // MapViewModel에 코스 팔로우 모드로 러닝 시작
-                    viewModel.startRecordingFollowCourse(course)
-                }
+                                // MapViewModel에 코스 팔로우 모드로 러닝 시작
+                    self.$viewModel.startRecordingFollowCourse(self.course)
+                            }
             }
         }
     }
