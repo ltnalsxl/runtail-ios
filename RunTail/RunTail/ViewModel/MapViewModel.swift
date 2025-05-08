@@ -17,6 +17,9 @@ class MapViewModel: ObservableObject {
     // MARK: - 사용자 데이터
     @Published var userEmail: String = ""
     @Published var userId: String = ""
+    // 코스 따라 달리기 관련 상태
+    @Published var isFollowingCourse = false
+    @Published var currentFollowingCourse: Course?
     
     // MARK: - 데이터 상태
     @Published var recentRuns: [Run] = []
@@ -545,5 +548,48 @@ class MapViewModel: ObservableObject {
             
             return currentLocation.distance(from: locA) < currentLocation.distance(from: locB)
         }
+        // 사용자의 평균 페이스 계산
+        func getUserAveragePace() -> Double {
+            // 기본 페이스 (초/km)
+            let defaultPace: Double = 6 * 60 // 6분/km
+            
+            // 최근 러닝 기록이 없으면 기본값 사용
+            guard !recentRuns.isEmpty else {
+                return defaultPace
+            }
+            
+            // 유효한 페이스가 있는 러닝만 필터링
+            let validRuns = recentRuns.filter { $0.pace > 0 }
+            
+            if validRuns.isEmpty {
+                return defaultPace
+            }
+            
+            // 최근 3개까지의 유효한 러닝 기록으로 평균 페이스 계산
+            let recentValidRuns = Array(validRuns.prefix(3))
+            let totalPace = recentValidRuns.reduce(0) { $0 + Double($1.pace) }
+            
+            return totalPace / Double(recentValidRuns.count)
+        }
+
+        // 코스 따라 달리기 모드로 러닝 시작
+        func startRecordingFollowCourse(_ course: Course) {
+            isRecording = true
+            isPaused = false
+            recordedCoordinates = []
+            recordingStartTime = Date()
+            recordingElapsedTime = 0
+            recordingDistance = 0
+            lastLocation = nil
+            pausedTime = 0
+            
+            // 타이머 시작
+            startTimer()
+            
+            // 코스 정보 저장
+            currentFollowingCourse = course
+            isFollowingCourse = true
+        }
+        
     }
 }
