@@ -125,7 +125,7 @@ struct HomeTabView: View {
             // 지도 영역
             #if swift(>=5.9) // iOS 17 이상
             if #available(iOS 17.0, *) {
-                Map {
+                Map(position: .constant(.automatic), content: {
                     // 사용자 현재 위치
                     UserAnnotation()
                     
@@ -160,16 +160,13 @@ struct HomeTabView: View {
                             }
                         }
                         
-                        // 수정된 코드
+                        // 코스 경로 표시 (점선)
                         MapPolyline(coordinates: selectedCourse.coordinates.map {
                             CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
                         })
                         .stroke(
                             Color.blue.opacity(0.8),
-                            lineWidth: 5,
-                            lineCap: .round,
-                            lineJoin: .round,
-                            dash: [8, 4]  // dashPhase 제거
+                            lineWidth: 5
                         )
                     }
                     
@@ -192,7 +189,7 @@ struct HomeTabView: View {
                             )
                         }
                     }
-                }
+                })
                 .mapStyle(.standard(elevation: .realistic, emphasis: .muted))
                 .mapControls {
                     // 지도 컨트롤 추가
@@ -200,12 +197,6 @@ struct HomeTabView: View {
                     MapScaleView()
                 }
                 .frame(height: UIScreen.main.bounds.height * 0.5)
-                .onChange(of: locationService.lastLocation) { oldValue, newValue in
-                    // 달리기 중일 때 현재 위치로 자동 이동
-                    if viewModel.isRecording, let location = newValue?.coordinate {
-                        // iOS 17에서는 맵 위치 제어
-                    }
-                }
             } else {
                 // iOS 16 이하용 맵 뷰
                 BasicMapView(
@@ -236,7 +227,6 @@ struct HomeTabView: View {
             )
             .frame(height: UIScreen.main.bounds.height * 0.5)
             #endif
-            
             // 검색 바 - 달리기 중이 아닐 때만 표시
             if !viewModel.isRecording {
                 searchBar
@@ -441,7 +431,7 @@ struct HomeTabView: View {
                                 endPoint: .trailing
                             ) :
                             viewModel.darkGradient
-                        )
+                    )
                     .cornerRadius(28)
                     .shadow(color: viewModel.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
                     
@@ -764,7 +754,8 @@ struct HomeTabView: View {
                                 Image(systemName: "speedometer")
                                     .font(.system(size: 10))
                                 Text(run.paceStr)
-                                    .font(.system(size: 12))}
+                                    .font(.system(size: 12))
+                            }
                             .foregroundColor(viewModel.themeColor)
                         }
                     }
@@ -876,10 +867,10 @@ struct HomeTabView: View {
             return String(format: "%02d:%02d", minutes, secs)
         }
     }
- }
+}
 
- // MARK: - iOS 16 이하를 위한 기본 지도 뷰
- struct BasicMapView: UIViewRepresentable {
+// MARK: - iOS 16 이하를 위한 기본 지도 뷰
+struct BasicMapView: UIViewRepresentable {
     @Binding var region: MKCoordinateRegion
     var showsUserLocation: Bool
     var recordedCoordinates: [Coordinate]
@@ -999,10 +990,10 @@ struct HomeTabView: View {
             return MKOverlayRenderer(overlay: overlay)
         }
     }
- }
+}
 
- // MARK: - 코스 미리보기 뷰
- struct RoutePreviewView: View {
+// MARK: - 코스 미리보기 뷰
+struct RoutePreviewView: View {
     let course: Course
     let viewModel: MapViewModel
     let locationService: LocationService
@@ -1094,7 +1085,7 @@ struct HomeTabView: View {
             // 코스 지도
             #if swift(>=5.9) // iOS 17 이상
             if #available(iOS 17.0, *) {
-                Map {
+                Map(position: .constant(.automatic), content: {
                     // 사용자 현재 위치
                     UserAnnotation()
                     
@@ -1124,7 +1115,7 @@ struct HomeTabView: View {
                         Color.blue.opacity(0.8),
                         lineWidth: 5
                     )
-                }
+                })
                 .mapStyle(.standard(elevation: .realistic, emphasis: .muted))
                 .frame(maxHeight: .infinity)
             } else {
@@ -1196,4 +1187,4 @@ struct HomeTabView: View {
         
         return totalPace / Double(recentValidRuns.count)
     }
- }
+}

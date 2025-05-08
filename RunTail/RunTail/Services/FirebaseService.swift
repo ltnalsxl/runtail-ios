@@ -178,11 +178,18 @@ class FirebaseService {
                     let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
                     
                     // 코스 객체 생성
+                    // 코스 객체 생성에서
                     let course = Course(
                         id: document.documentID,
                         title: data["title"] as? String ?? "무제 코스",
                         distance: data["distance"] as? Double ?? 0,
-                        coordinates: coordinates,
+                        coordinates: coordsData.map { point in
+                            Coordinate(
+                                lat: point["lat"] as? Double ?? 0.0,
+                                lng: point["lng"] as? Double ?? 0.0,
+                                timestamp: point["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970
+                            )
+                        },
                         createdAt: timestamp,
                         createdBy: data["createdBy"] as? String ?? "",
                         isPublic: data["isPublic"] as? Bool ?? false

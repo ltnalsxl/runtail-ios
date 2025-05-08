@@ -571,9 +571,11 @@ class MapViewModel: ObservableObject {
             
             return totalPace / Double(recentValidRuns.count)
         }
-
+        
         // 코스 따라 달리기 모드로 러닝 시작
-        func startRecordingFollowCourse(_ course: Course) {
+        // MapViewModel.swift에서
+        // 코스 따라 달리기 모드로 러닝 시작
+        func startRecording(followingCourse: Course? = nil) {
             isRecording = true
             isPaused = false
             recordedCoordinates = []
@@ -583,13 +585,18 @@ class MapViewModel: ObservableObject {
             lastLocation = nil
             pausedTime = 0
             
+            // 코스 따라가기 모드를 위한 추가 로직
+            if let course = followingCourse {
+                currentFollowingCourse = course
+                isFollowingCourse = true
+            } else {
+                currentFollowingCourse = nil
+                isFollowingCourse = false
+            }
+            
             // 타이머 시작
             startTimer()
-            
-            // 코스 정보 저장
-            currentFollowingCourse = course
-            isFollowingCourse = true
         }
-        
     }
 }
+
