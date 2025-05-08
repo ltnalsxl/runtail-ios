@@ -11,6 +11,7 @@ import CoreLocation
 import SwiftUI  // SwiftUI import 추가 (withAnimation을 위해 필요)
 
 class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
+    
     private let locationManager = CLLocationManager()
     @Published var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780), // 서울
