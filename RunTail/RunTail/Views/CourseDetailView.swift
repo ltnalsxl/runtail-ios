@@ -98,7 +98,7 @@ struct CourseDetailView: View {
             CourseSummarySheet(
                 course: course,
                 elevationData: elevationData,
-                averagePace: self.$viewModel.getUserAveragePace,
+                averagePace: viewModel.getUserAveragePace(),
                 onDismiss: { showSummarySheet = false },
                 onStartRunning: startRunningThisCourse
             )
@@ -282,7 +282,7 @@ struct CourseDetailView: View {
             )
             
             // 시간 카드 (예상 시간 - 사용자 평균 페이스 기반)
-            let estimatedTime = Int(course.distance / 1000 * self.$viewModel.getUserAveragePace)
+            let estimatedTime = Int(course.distance / 1000 * viewModel.getUserAveragePace())
             StatisticCard(
                 title: "예상 시간",
                 value: Formatters.formatDuration(estimatedTime),
@@ -641,7 +641,8 @@ struct CourseDetailView: View {
                 // 0.5초 후 러닝 시작 (뷰 전환 후)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                 // MapViewModel에 코스 팔로우 모드로 러닝 시작
-                    self.$viewModel.startRecordingFollowCourse(self.course)
+                    viewModel.startRecordingFollowCourse(course)
+
                             }
             }
         }
