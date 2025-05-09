@@ -40,9 +40,19 @@ class LocationService: NSObject, ObservableObject, CLLocationManagerDelegate {
     private func setupLocationManager() {
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        locationManager.requestWhenInUseAuthorization()
-        locationManager.startUpdatingLocation()
-    }
+
+        // ⚠️ iOS 14 이상에서 정확도 제어도 가능 (필요시 추가)
+        if #available(iOS 14.0, *) {
+            locationManager.requestTemporaryFullAccuracyAuthorization(withPurposeKey: "LocationPurpose")
+        }
+
+        // 약간 딜레이 후 항상 권한 요청 (시스템이 거절하지 않게 하기 위함)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.locationManager.requestAlwaysAuthorization()
+            }
+
+            locationManager.startUpdatingLocation()
+        }
     
     // MARK: - 지도 조작 기능
     func zoomIn() {

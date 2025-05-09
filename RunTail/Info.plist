@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>com.ltnalsxl.RunTail</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <key>CFBundleName</key>
+    <string>RunTail</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+
+    <key>CFBundleVersion</key>
+    <string>1</string>
+
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+    </array>
+
+    <!-- 🔒 위치 권한 -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>RunTail이 러닝 코스를 기록하고 지도에 표시하기 위해 위치 정보가 필요합니다.</string>
+
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>백그라운드에서도 러닝 코스를 정확히 기록하기 위해 항상 위치 정보가 필요합니다.</string>
+
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>러닝 코스를 정확히 기록하기 위해 항상 위치 정보가 필요합니다.</string>
+
+    <!-- 🏃 모션 권한 -->
+    <key>NSMotionUsageDescription</key>
+    <string>걸음 수 및 활동 유형을 감지하여 더 정확한 러닝 데이터를 수집하기 위해 필요합니다.</string>
+
+    <!-- 🔄 백그라운드 위치 추적 -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>location</string>
+        <string>processing</string>
+        <string>audio</string>
+    </array>
+</dict>
+</plist>
