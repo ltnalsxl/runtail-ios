@@ -31,7 +31,7 @@ struct MapView: View {
                 if viewModel.selectedTab == 0 {
                     // 홈 화면 (지도 화면)
                     VStack(spacing: 0) {
-                        headerBar(showTitle: false, showGPS: true)
+                        headerBar(title: "지도", showGPS: false)
                         HomeTabView(viewModel: viewModel, locationService: locationService)
                             .environmentObject(viewModel)
                             .environmentObject(locationService)
@@ -52,7 +52,7 @@ struct MapView: View {
                 } else if viewModel.selectedTab == 3 {
                     // 프로필 화면
                     VStack(spacing: 0) {
-                        headerBar(title: "프로필", subtitle: "러닝 활동 및 설정", showGPS: false)
+                        headerBar(title: "지도", showGPS: false)
                         ProfileTabView(viewModel: viewModel, colorScheme: colorScheme)
                     }
                 }
