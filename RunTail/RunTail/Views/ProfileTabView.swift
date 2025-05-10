@@ -21,7 +21,7 @@ struct ProfileTabView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // 프로필 헤더
-                    VStack(spacing: 8) {
+                    VStack(spacing: 16) {
                         // 배경 이미지
                         ZStack(alignment: .bottom) {
                             Rectangle()

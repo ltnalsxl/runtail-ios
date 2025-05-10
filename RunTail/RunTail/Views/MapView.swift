@@ -28,27 +28,30 @@ struct MapView: View {
         NavigationView {
             ZStack {
                 // 선택된 탭에 따라 다른 콘텐츠 표시
-                Group {
+                VStack(spacing: 0) {
                     if viewModel.selectedTab == 0 {
-                        VStack(spacing: 0) {
-                            topBarWithTitle("RunTail")
-                            homeTabView
-                        }
+                        // 홈 화면 (지도 화면)
+                        // 상단바에 RunTail과 GPS 상태 표시
+                        mapHeaderBar
+                        HomeTabView(viewModel: viewModel, locationService: locationService)
+                            .environmentObject(viewModel)
+                            .environmentObject(locationService)
+                            .environment(\.checkBeforeStartRunning, checkBeforeStartRunning)
                     } else if viewModel.selectedTab == 1 {
-                        VStack(spacing: 0) {
-                            topBarWithTitle("탐색")
-                            exploreTabView
-                        }
+                        // 탐색 화면
+                        // 상단바에 RunTail과 "탐색" 제목
+                        standardHeaderBar(title: "탐색")
+                        ExploreTabView(viewModel: viewModel)
                     } else if viewModel.selectedTab == 2 {
-                        VStack(spacing: 0) {
-                            topBarWithTitle("활동")
-                            activityTabView
-                        }
+                        // 활동 화면
+                        // 상단바에 RunTail과 "활동" 제목
+                        standardHeaderBar(title: "활동")
+                        ActivityTabView(viewModel: viewModel)
                     } else if viewModel.selectedTab == 3 {
-                        VStack(spacing: 0) {
-                            topBarWithTitle("프로필")
-                            profileTabView
-                        }
+                        // 프로필 화면
+                        // 상단바에 RunTail과 "프로필" 제목 + 부제목
+                        standardHeaderBar(title: "프로필", subtitle: "러닝 활동 및 설정")
+                        ProfileTabView(viewModel: viewModel, colorScheme: colorScheme)
                     }
                 }
                 
@@ -79,7 +82,7 @@ struct MapView: View {
                     label: { EmptyView() }
                 )
             }
-            .edgesIgnoringSafeArea([.top,.bottom])
+            .edgesIgnoringSafeArea(.bottom)
             .navigationBarHidden(true)
             // 로그아웃 확인 알림
             .alert(isPresented: $viewModel.showLogoutAlert) {
@@ -120,53 +123,64 @@ struct MapView: View {
         }
     }
     
-    // MARK: - 상단 바 헬퍼 함수
-    func topBarWithTitle(_ title: String) -> some View {
+    // MARK: - 지도 화면용 헤더 바 (RunTail + GPS)
+    var mapHeaderBar: some View {
+        HStack {
+            Text("RunTail")
+                .font(.system(size: 18, weight: .bold))
+            
+            Spacer()
+            
+            // GPS 상태 표시
+            HStack(spacing: 4) {
+                Text("GPS")
+                    .font(.system(size: 12, weight: .medium))
+                
+                // GPS 신호 강도에 따른 색상 변경
+                Circle()
+                    .fill(gpsSignalColor)
+                    .frame(width: 8, height: 8)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, getSafeAreaTop())
+        .padding(.vertical, 12)
+        .foregroundColor(.white)
+        .background(viewModel.themeGradient)
+        .edgesIgnoringSafeArea(.top)
+    }
+    
+    // MARK: - 표준 헤더 바 (지도 화면 외)
+    func standardHeaderBar(title: String, subtitle: String? = nil) -> some View {
         VStack(spacing: 0) {
-            // 상단 상태 바 (앱 이름 및 GPS 상태)
+            // RunTail 타이틀
             HStack {
                 Text("RunTail")
                     .font(.system(size: 18, weight: .bold))
                 
                 Spacer()
-                
-                // GPS 상태 표시
-                HStack(spacing: 4) {
-                    Text("GPS")
-                        .font(.system(size: 12, weight: .medium))
-                    
-                    // GPS 신호 강도에 따른 색상 변경
-                    Circle()
-                        .fill(gpsSignalColor)
-                        .frame(width: 8, height: 8)
-                }
-                .foregroundColor(.white)
             }
             .padding(.horizontal, 16)
             .padding(.top, getSafeAreaTop())
-            .padding(.bottom, 4)
+            .padding(.bottom, 8)
             
-            // 섹션 제목 (인자로 받은 제목)
-            if title != "RunTail" {  // RunTail이 아닌 경우에만 별도 제목 표시
+            // 화면 제목
+            VStack(spacing: subtitle != nil ? 4 : 0) {
                 Text(title)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-            } else {
-                // RunTail일 경우 간격만 추가
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(height: 4)
+                    .font(.system(size: 20, weight: .bold))
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.8))
+                }
             }
-            
-            // 구분선
-            Rectangle()
-                .fill(Color.white.opacity(0.3))
-                .frame(height: 1)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 12)
         }
-        .background(viewModel.themeGradient)
         .foregroundColor(.white)
+        .background(viewModel.themeGradient)
+        .edgesIgnoringSafeArea(.top)
     }
     
     // 안전 영역 상단 높이를 가져오는 함수
@@ -281,29 +295,6 @@ struct MapView: View {
         .background(Color.white)
         .cornerRadius(32, corners: [.topLeft, .topRight])
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
-    }
-    
-    // MARK: - 홈 탭 뷰
-    var homeTabView: some View {
-        HomeTabView(viewModel: viewModel, locationService: locationService)
-            .environmentObject(viewModel)
-            .environmentObject(locationService)
-            .environment(\.checkBeforeStartRunning, checkBeforeStartRunning)
-    }
-    
-    // MARK: - 탐색 탭 뷰
-    var exploreTabView: some View {
-        ExploreTabView(viewModel: viewModel)
-    }
-    
-    // MARK: - 활동 탭 뷰
-    var activityTabView: some View {
-        ActivityTabView(viewModel: viewModel)
-    }
-    
-    // MARK: - 프로필 탭 뷰
-    var profileTabView: some View {
-        ProfileTabView(viewModel: viewModel, colorScheme: colorScheme)
     }
 }
 
