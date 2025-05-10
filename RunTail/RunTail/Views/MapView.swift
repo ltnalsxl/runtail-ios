@@ -28,29 +28,31 @@ struct MapView: View {
         NavigationView {
             ZStack {
                 // 선택된 탭에 따라 다른 콘텐츠 표시
-                VStack(spacing: 0) {
-                    if viewModel.selectedTab == 0 {
-                        // 홈 화면 (지도 화면)
-                        // 상단바에 RunTail과 GPS 상태 표시
-                        mapHeaderBar
+                if viewModel.selectedTab == 0 {
+                    // 홈 화면 (지도 화면)
+                    VStack(spacing: 0) {
+                        headerBar(showTitle: false, showGPS: true)
                         HomeTabView(viewModel: viewModel, locationService: locationService)
                             .environmentObject(viewModel)
                             .environmentObject(locationService)
                             .environment(\.checkBeforeStartRunning, checkBeforeStartRunning)
-                    } else if viewModel.selectedTab == 1 {
-                        // 탐색 화면
-                        // 상단바에 RunTail과 "탐색" 제목
-                        standardHeaderBar(title: "탐색")
+                    }
+                } else if viewModel.selectedTab == 1 {
+                    // 탐색 화면
+                    VStack(spacing: 0) {
+                        headerBar(title: "탐색", showGPS: false)
                         ExploreTabView(viewModel: viewModel)
-                    } else if viewModel.selectedTab == 2 {
-                        // 활동 화면
-                        // 상단바에 RunTail과 "활동" 제목
-                        standardHeaderBar(title: "활동")
+                    }
+                } else if viewModel.selectedTab == 2 {
+                    // 활동 화면
+                    VStack(spacing: 0) {
+                        headerBar(title: "활동", showGPS: false)
                         ActivityTabView(viewModel: viewModel)
-                    } else if viewModel.selectedTab == 3 {
-                        // 프로필 화면
-                        // 상단바에 RunTail과 "프로필" 제목 + 부제목
-                        standardHeaderBar(title: "프로필", subtitle: "러닝 활동 및 설정")
+                    }
+                } else if viewModel.selectedTab == 3 {
+                    // 프로필 화면
+                    VStack(spacing: 0) {
+                        headerBar(title: "프로필", subtitle: "러닝 활동 및 설정", showGPS: false)
                         ProfileTabView(viewModel: viewModel, colorScheme: colorScheme)
                     }
                 }
@@ -82,7 +84,7 @@ struct MapView: View {
                     label: { EmptyView() }
                 )
             }
-            .edgesIgnoringSafeArea(.bottom)
+            .ignoresSafeArea(edges: [.top])
             .navigationBarHidden(true)
             // 로그아웃 확인 알림
             .alert(isPresented: $viewModel.showLogoutAlert) {
@@ -123,64 +125,73 @@ struct MapView: View {
         }
     }
     
-    // MARK: - 지도 화면용 헤더 바 (RunTail + GPS)
-    var mapHeaderBar: some View {
-        HStack {
-            Text("RunTail")
-                .font(.system(size: 18, weight: .bold))
+    // MARK: - 통합된 헤더바
+    func headerBar(title: String? = nil, subtitle: String? = nil, showTitle: Bool = true, showGPS: Bool = false) -> some View {
+        ZStack {
+            // 배경
+            viewModel.themeGradient
+                .ignoresSafeArea(edges: .top)
             
-            Spacer()
-            
-            // GPS 상태 표시
-            HStack(spacing: 4) {
-                Text("GPS")
-                    .font(.system(size: 12, weight: .medium))
+            VStack(spacing: 0) {
+                // RunTail 타이틀 영역
+                HStack {
+                    Text("RunTail")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    // GPS 상태 (지도 화면에만 표시)
+                    if showGPS {
+                        HStack(spacing: 4) {
+                            Text("GPS")
+                                .font(.system(size: 12, weight: .medium))
+                            
+                            Circle()
+                                .fill(gpsSignalColor)
+                                .frame(width: 8, height: 8)
+                        }
+                        .foregroundColor(.white)
+                    }
+                }
+                .padding(.top, getSafeAreaTop())
+                .padding(.horizontal, 16)
+                .padding(.bottom, showTitle ? 8 : 16)
                 
-                // GPS 신호 강도에 따른 색상 변경
-                Circle()
-                    .fill(gpsSignalColor)
-                    .frame(width: 8, height: 8)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, getSafeAreaTop())
-        .padding(.vertical, 12)
-        .foregroundColor(.white)
-        .background(viewModel.themeGradient)
-        .edgesIgnoringSafeArea(.top)
-    }
-    
-    // MARK: - 표준 헤더 바 (지도 화면 외)
-    func standardHeaderBar(title: String, subtitle: String? = nil) -> some View {
-        VStack(spacing: 0) {
-            // RunTail 타이틀
-            HStack {
-                Text("RunTail")
-                    .font(.system(size: 18, weight: .bold))
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, getSafeAreaTop())
-            .padding(.bottom, 8)
-            
-            // 화면 제목
-            VStack(spacing: subtitle != nil ? 4 : 0) {
-                Text(title)
-                    .font(.system(size: 20, weight: .bold))
-                
-                if let subtitle = subtitle {
-                    Text(subtitle)
-                        .font(.system(size: 14))
-                        .foregroundColor(.white.opacity(0.8))
+                // 화면 제목 (필요한 경우에만)
+                if showTitle, let title = title {
+                    Text(title)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.bottom, subtitle != nil ? 4 : 12)
+                    
+                    // 부제목 (있는 경우에만)
+                    if let subtitle = subtitle {
+                        Text(subtitle)
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(.bottom, 12)
+                    }
                 }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, 12)
         }
-        .foregroundColor(.white)
-        .background(viewModel.themeGradient)
-        .edgesIgnoringSafeArea(.top)
+        .frame(height: calculateHeaderHeight(showTitle: showTitle, hasSubtitle: subtitle != nil))
+    }
+    
+    // 헤더 높이 계산
+    func calculateHeaderHeight(showTitle: Bool, hasSubtitle: Bool) -> CGFloat {
+        let safeAreaTop = getSafeAreaTop()
+        let baseTitleHeight: CGFloat = 44 // RunTail 타이틀 영역 높이
+        
+        if !showTitle {
+            return safeAreaTop + baseTitleHeight
+        }
+        
+        let titleHeight: CGFloat = 44 // 제목 영역 높이
+        let subtitleHeight: CGFloat = hasSubtitle ? 30 : 0 // 부제목 높이
+        
+        return safeAreaTop + baseTitleHeight + titleHeight + subtitleHeight
     }
     
     // 안전 영역 상단 높이를 가져오는 함수
