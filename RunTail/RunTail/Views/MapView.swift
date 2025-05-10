@@ -67,7 +67,7 @@ struct MapView: View {
                     label: { EmptyView() }
                 )
             }
-            .edgesIgnoringSafeArea(.bottom)
+            .edgesIgnoringSafeArea([.top,.bottom])
             .navigationBarHidden(true)
             // 로그아웃 확인 알림
             .alert(isPresented: $viewModel.showLogoutAlert) {

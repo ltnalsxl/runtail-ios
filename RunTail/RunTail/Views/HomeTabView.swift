@@ -98,7 +98,7 @@ struct HomeTabView: View {
             .foregroundColor(.white)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(viewModel.themeGradient)
         .foregroundColor(.white)
     }
@@ -1117,7 +1117,7 @@ struct RoutePreviewView: View {
                     )
                 })
                 .mapStyle(.standard(elevation: .realistic, emphasis: .muted))
-                .frame(maxHeight: .infinity)
+                .frame(height: UIScreen.main.bounds.height * 0.43) // 높이를 더 줄임
             } else {
                 BasicMapView(
                     region: $region,
@@ -1128,7 +1128,7 @@ struct RoutePreviewView: View {
                     isPaused: false,
                     themeColor: UIColor(viewModel.themeColor)
                 )
-                .frame(maxHeight: .infinity)
+                .frame(height: UIScreen.main.bounds.height * 0.43) // 높이를 더 줄임
             }
             #else
             BasicMapView(
@@ -1140,7 +1140,7 @@ struct RoutePreviewView: View {
                 isPaused: false,
                 themeColor: UIColor(viewModel.themeColor)
             )
-            .frame(maxHeight: .infinity)
+            .frame(height: UIScreen.main.bounds.height * 0.43) // 높이를 더 줄임
             #endif
             
             // 하단 버튼
