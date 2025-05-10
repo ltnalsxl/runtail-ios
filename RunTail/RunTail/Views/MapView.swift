@@ -30,13 +30,25 @@ struct MapView: View {
                 // 선택된 탭에 따라 다른 콘텐츠 표시
                 Group {
                     if viewModel.selectedTab == 0 {
-                        homeTabView
+                        VStack(spacing: 0) {
+                            topBarWithTitle("RunTail")
+                            homeTabView
+                        }
                     } else if viewModel.selectedTab == 1 {
-                        exploreTabView
+                        VStack(spacing: 0) {
+                            topBarWithTitle("탐색")
+                            exploreTabView
+                        }
                     } else if viewModel.selectedTab == 2 {
-                        activityTabView
+                        VStack(spacing: 0) {
+                            topBarWithTitle("활동")
+                            activityTabView
+                        }
                     } else if viewModel.selectedTab == 3 {
-                        profileTabView
+                        VStack(spacing: 0) {
+                            topBarWithTitle("프로필")
+                            profileTabView
+                        }
                     }
                 }
                 
@@ -105,6 +117,83 @@ struct MapView: View {
         }
         .onAppear {
             setupLocationServiceAndViewModel()
+        }
+    }
+    
+    // MARK: - 상단 바 헬퍼 함수
+    func topBarWithTitle(_ title: String) -> some View {
+        VStack(spacing: 0) {
+            // 상단 상태 바 (앱 이름 및 GPS 상태)
+            HStack {
+                Text("RunTail")
+                    .font(.system(size: 18, weight: .bold))
+                
+                Spacer()
+                
+                // GPS 상태 표시
+                HStack(spacing: 4) {
+                    Text("GPS")
+                        .font(.system(size: 12, weight: .medium))
+                    
+                    // GPS 신호 강도에 따른 색상 변경
+                    Circle()
+                        .fill(gpsSignalColor)
+                        .frame(width: 8, height: 8)
+                }
+                .foregroundColor(.white)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, getSafeAreaTop())
+            .padding(.bottom, 4)
+            
+            // 섹션 제목 (인자로 받은 제목)
+            if title != "RunTail" {  // RunTail이 아닌 경우에만 별도 제목 표시
+                Text(title)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            } else {
+                // RunTail일 경우 간격만 추가
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(height: 4)
+            }
+            
+            // 구분선
+            Rectangle()
+                .fill(Color.white.opacity(0.3))
+                .frame(height: 1)
+        }
+        .background(viewModel.themeGradient)
+        .foregroundColor(.white)
+    }
+    
+    // 안전 영역 상단 높이를 가져오는 함수
+    func getSafeAreaTop() -> CGFloat {
+        let keyWindow = UIApplication.shared.connectedScenes
+            .filter { $0.activationState == .foregroundActive }
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows
+            .filter { $0.isKeyWindow }
+            .first
+        
+        return keyWindow?.safeAreaInsets.top ?? 0
+    }
+    
+    // GPS 신호 강도에 따른 색상
+    var gpsSignalColor: Color {
+        switch locationService.gpsSignalStrength {
+        case 0:
+            return .red
+        case 1:
+            return .orange
+        case 2:
+            return .yellow
+        case 3, 4:
+            return .green
+        default:
+            return .gray
         }
     }
     

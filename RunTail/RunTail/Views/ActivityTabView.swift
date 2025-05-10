@@ -16,14 +16,7 @@ struct ActivityTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 상단 상태 바
-            ZStack {
-                viewModel.themeGradient
-                Text("활동")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .frame(height: 44)
+
             
             // 달력 뷰 (예시)
             ScrollView {
