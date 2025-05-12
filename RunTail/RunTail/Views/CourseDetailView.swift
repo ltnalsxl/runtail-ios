@@ -2,7 +2,7 @@
 //  CourseDetailView.swift
 //  RunTail
 //
-//  Created by 이수민 on 5/8/25.
+//  Updated on 5/10/25.
 //
 
 import SwiftUI
@@ -24,7 +24,7 @@ struct CourseDetailView: View {
     @State private var showElevationChart = false
     @State private var showSummarySheet = false
     
-    // 가상 뷰모델 (실제 구현 시 의존성 주입으로 제공)
+    // 의존성 주입
     @EnvironmentObject var viewModel: MapViewModel
     @EnvironmentObject var locationService: LocationService
     @Environment(\.checkBeforeStartRunning) var checkBeforeStartRunning
@@ -32,42 +32,90 @@ struct CourseDetailView: View {
     // MARK: - 바디
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
-                // 지도 영역
-                mapSection
-                
-                // 코스 정보
-                ScrollView {
-                    // 코스 제목 및 정보
-                    courseHeaderSection
-                    
-                    // 통계 카드 섹션
-                    statisticsSection
-                    
-                    // 고도 차트 섹션
-                    if !elevationData.isEmpty {
-                        elevationChartSection
-                    }
-                    
-                    // 액션 버튼 섹션
-                    actionButtonsSection
-                    
-                    // 코스 상세 섹션
-                    courseDetailsSection
-                }
-                .padding(.bottom, 20)
-            }
+            // 배경색
+            Color.rtBackground
+                .ignoresSafeArea()
             
-            // 일정 부분 스크롤 시 상단에 고정되는 헤더
-            VStack {
-                // 상단 헤더바 (반투명 배경)
-                fixedHeaderBar
+            VStack(spacing: 0) {
+                // 상단 헤더 배경
+                LinearGradient.rtPrimaryGradient
+                    .frame(height: 140)
+                    .cornerRadius(30, corners: [.bottomLeft, .bottomRight])
+                    .ignoresSafeArea(edges: .top)
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    .overlay(
+                        // 헤더 내용
+                        VStack {
+                            // 뒤로가기, 제목, 공유 버튼
+                            HStack {
+                                Button(action: {
+                                    presentationMode.wrappedValue.dismiss()
+                                }) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.white.opacity(0.2))
+                                        .clipShape(Circle())
+                                }
+                                
+                                Spacer()
+                                
+                                Text("코스 상세")
+                                    .rtBodyLarge()
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Button(action: {
+                                    showShareSheet = true
+                                }) {
+                                    Image(systemName: "square.and.arrow.up")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.white.opacity(0.2))
+                                        .clipShape(Circle())
+                                }
+                            }
+                            .padding(.top, getSafeAreaTop())
+                            .padding(.horizontal, 16)
+                            
+                            Spacer()
+                        }
+                    )
                 
-                Spacer()
+                // 스크롤 가능한 콘텐츠
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // 코스 정보 카드
+                        courseInfoCard
+                            .padding(.top, 20)
+                        
+                        // 지도 섹션
+                        mapSection
+                        
+                        // 통계 카드 섹션
+                        statisticsSection
+                        
+                        // 고도 차트 섹션
+                        if !elevationData.isEmpty {
+                            elevationChartSection
+                        }
+                        
+                        // 액션 버튼 섹션
+                        actionButtonsSection
+                        
+                        // 코스 상세 섹션
+                        courseDetailsSection
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 30)
+                }
             }
         }
         .navigationBarHidden(true)
-        .edgesIgnoringSafeArea(.top)
         .onAppear {
             setupInitialData()
         }
@@ -106,10 +154,55 @@ struct CourseDetailView: View {
         }
     }
     
+    // MARK: - 코스 정보 카드
+    var courseInfoCard: some View {
+        RTCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    // 코스 제목
+                    Text(course.title)
+                        .rtHeading2()
+                    
+                    Spacer()
+                    
+                    // 편집 버튼
+                    Button(action: {
+                        editedTitle = course.title
+                        isPublic = course.isPublic
+                        isEditingTitle = true
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                            .padding(8)
+                            .background(Color(UIColor.secondarySystemBackground))
+                            .clipShape(Circle())
+                    }
+                }
+                
+                // 생성 정보
+                HStack(spacing: 16) {
+                    Label(Formatters.formatDate(course.createdAt), systemImage: "calendar")
+                        .rtBodySmall()
+                        .foregroundColor(.gray)
+                    
+                    if course.isPublic {
+                        Label("공개", systemImage: "globe")
+                            .rtBodySmall()
+                            .foregroundColor(.rtSuccess)
+                    } else {
+                        Label("비공개", systemImage: "lock")
+                            .rtBodySmall()
+                            .foregroundColor(.gray)
+                    }
+                }
+            }
+        }
+    }
+    
     // MARK: - 지도 섹션
     var mapSection: some View {
-        ZStack(alignment: .top) {
-            // 코스 지도
+        RTCardView {
             #if swift(>=5.9) // iOS 17 이상
             if #available(iOS 17.0, *) {
                 Map {
@@ -117,9 +210,9 @@ struct CourseDetailView: View {
                     if let firstCoord = course.coordinates.first {
                         Annotation("시작", coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng)) {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.green)
-                                .padding(8)
+                                .font(.system(size: 18))
+                                .foregroundColor(.rtSuccess)
+                                .padding(6)
                                 .background(Circle().fill(Color.white))
                                 .shadow(radius: 2)
                         }
@@ -129,9 +222,9 @@ struct CourseDetailView: View {
                     if let lastCoord = course.coordinates.last, course.coordinates.count > 1 {
                         Annotation("종료", coordinate: CLLocationCoordinate2D(latitude: lastCoord.lat, longitude: lastCoord.lng)) {
                             Image(systemName: "flag.checkered")
-                                .font(.system(size: 20))
-                                .foregroundColor(.red)
-                                .padding(8)
+                                .font(.system(size: 18))
+                                .foregroundColor(.rtError)
+                                .padding(6)
                                 .background(Circle().fill(Color.white))
                                 .shadow(radius: 2)
                         }
@@ -143,10 +236,7 @@ struct CourseDetailView: View {
                     })
                     .stroke(
                         LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 89/255, green: 86/255, blue: 214/255),
-                                Color(red: 0/255, green: 122/255, blue: 255/255)
-                            ]),
+                            gradient: Gradient(colors: [Color.rtPrimary, Color.rtSecondary]),
                             startPoint: .leading,
                             endPoint: .trailing
                         ),
@@ -157,8 +247,8 @@ struct CourseDetailView: View {
                     ForEach(getKilometerMarkers(), id: \.0) { index, coordinate in
                         Annotation("\(index)km", coordinate: coordinate) {
                             Text("\(index)km")
-                                .font(.system(size: 12, weight: .bold))
-                                .padding(6)
+                                .font(.system(size: 10, weight: .bold))
+                                .padding(4)
                                 .background(Circle().fill(Color.white))
                                 .shadow(radius: 1)
                         }
@@ -169,171 +259,90 @@ struct CourseDetailView: View {
                     MapCompass()
                     MapScaleView()
                 }
-                .frame(height: 300)
+                .frame(height: 250)
+                .cornerRadius(16)
             } else {
-                CourseDetailMapView(
+                EnhancedCourseMapView(
                     region: $region,
                     coordinates: course.coordinates,
                     kilometerMarkers: getKilometerMarkers()
                 )
-                .frame(height: 300)
+                .frame(height: 250)
+                .cornerRadius(16)
             }
             #else
-            CourseDetailMapView(
+            EnhancedCourseMapView(
                 region: $region,
                 coordinates: course.coordinates,
                 kilometerMarkers: getKilometerMarkers()
             )
-            .frame(height: 300)
+            .frame(height: 250)
+            .cornerRadius(16)
             #endif
         }
-    }
-    
-    // MARK: - 상단 고정 헤더 바
-    var fixedHeaderBar: some View {
-        HStack {
-            // 뒤로가기 버튼
-            Button(action: {
-                presentationMode.wrappedValue.dismiss()
-            }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .padding(12)
-                    .background(Color.white.opacity(0.9))
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-            }
-            .foregroundColor(.black)
-            
-            Spacer()
-            
-            // 공유 버튼
-            Button(action: {
-                showShareSheet = true
-            }) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.system(size: 16, weight: .semibold))
-                    .padding(12)
-                    .background(Color.white.opacity(0.9))
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-            }
-            .foregroundColor(.black)
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 50)
-    }
-    
-    // MARK: - 코스 헤더 섹션
-    var courseHeaderSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                // 코스 제목
-                Text(course.title)
-                    .font(.system(size: 24, weight: .bold))
-                
-                Spacer()
-                
-                // 편집 버튼
-                Button(action: {
-                    editedTitle = course.title
-                    isPublic = course.isPublic
-                    isEditingTitle = true
-                }) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                        .padding(8)
-                        .background(Color(UIColor.secondarySystemBackground))
-                        .clipShape(Circle())
-                }
-            }
-            
-            // 생성 정보
-            HStack(spacing: 20) {
-                Label(Formatters.formatDate(course.createdAt), systemImage: "calendar")
-                    .foregroundColor(.gray)
-                    .font(.system(size: 14))
-                
-                if course.isPublic {
-                    Label("공개", systemImage: "globe")
-                        .foregroundColor(.green)
-                        .font(.system(size: 14))
-                } else {
-                    Label("비공개", systemImage: "lock")
-                        .foregroundColor(.gray)
-                        .font(.system(size: 14))
-                }
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
     }
     
     // MARK: - 통계 카드 섹션
     var statisticsSection: some View {
         HStack(spacing: 16) {
             // 거리 카드
-            StatisticCard(
+            EnhancedStatisticCard(
                 title: "총 거리",
                 value: Formatters.formatDistance(course.distance),
                 icon: "ruler",
-                color: Color(red: 89/255, green: 86/255, blue: 214/255)
+                color: .rtPrimary
             )
             
             // 시간 카드 (예상 시간 - 사용자 평균 페이스 기반)
             let estimatedTime = Int(course.distance / 1000 * viewModel.getUserAveragePace())
-            StatisticCard(
+            EnhancedStatisticCard(
                 title: "예상 시간",
                 value: Formatters.formatDuration(estimatedTime),
                 icon: "clock",
-                color: Color(red: 45/255, green: 104/255, blue: 235/255)
+                color: .rtSecondary
             )
             
             // 고도 차이 카드
             let elevationGain = calculateElevationGain()
-            StatisticCard(
+            EnhancedStatisticCard(
                 title: "고도 변화",
                 value: "\(Int(elevationGain))m",
                 icon: "mountain.2",
-                color: Color(red: 76/255, green: 175/255, blue: 80/255)
+                color: .rtSuccess
             )
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
     }
     
     // MARK: - 고도 차트 섹션
     var elevationChartSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("고도 프로필")
-                    .font(.system(size: 18, weight: .semibold))
+        RTCardView {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("고도 프로필")
+                        .rtHeading3()
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        showElevationChart.toggle()
+                    }) {
+                        Text(showElevationChart ? "접기" : "자세히")
+                            .rtBodySmall()
+                            .foregroundColor(.rtPrimary)
+                    }
+                }
                 
-                Spacer()
-                
-                Button(action: {
-                    showElevationChart.toggle()
-                }) {
-                    Text(showElevationChart ? "접기" : "자세히")
-                        .font(.system(size: 14))
-                        .foregroundColor(Color(red: 89/255, green: 86/255, blue: 214/255))
+                if showElevationChart {
+                    EnhancedElevationChartView(elevationData: elevationData, distance: course.distance)
+                        .frame(height: 160)
+                        .padding(.vertical, 8)
+                } else {
+                    EnhancedElevationMiniChartView(elevationData: elevationData)
+                        .frame(height: 60)
+                        .padding(.vertical, 8)
                 }
             }
-            
-            if showElevationChart {
-                ElevationChartView(elevationData: elevationData, distance: course.distance)
-                    .frame(height: 160)
-                    .padding(.vertical, 8)
-            } else {
-                ElevationMiniChartView(elevationData: elevationData)
-                    .frame(height: 60)
-                    .padding(.vertical, 8)
-            }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .background(Color.white)
     }
     
     // MARK: - 액션 버튼 섹션
@@ -345,22 +354,14 @@ struct CourseDetailView: View {
                     Image(systemName: "figure.run")
                     Text("이 코스로 달리기")
                 }
-                .font(.system(size: 16, weight: .medium))
+                .rtBodyLarge()
+                .fontWeight(.medium)
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 89/255, green: 86/255, blue: 214/255),
-                            Color(red: 45/255, green: 104/255, blue: 235/255)
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
+                .padding(.vertical, 16)
+                .background(LinearGradient.rtPrimaryGradient)
                 .foregroundColor(.white)
-                .cornerRadius(16)
-                .shadow(color: Color(red: 89/255, green: 86/255, blue: 214/255).opacity(0.4), radius: 4, x: 0, y: 2)
+                .cornerRadius(20)
+                .shadow(color: Color.rtPrimary.opacity(0.3), radius: 8, x: 0, y: 4)
             }
             
             // 코스 요약 버튼
@@ -371,12 +372,13 @@ struct CourseDetailView: View {
                     Image(systemName: "chart.bar")
                     Text("코스 요약 보기")
                 }
-                .font(.system(size: 16, weight: .medium))
+                .rtBodyLarge()
+                .fontWeight(.medium)
                 .frame(maxWidth: .infinity)
-                .padding()
+                .padding(.vertical, 16)
                 .background(Color(UIColor.secondarySystemBackground))
                 .foregroundColor(.primary)
-                .cornerRadius(16)
+                .cornerRadius(20)
             }
             
             // 코스 삭제 버튼 (자신이 만든 코스인 경우에만)
@@ -388,91 +390,84 @@ struct CourseDetailView: View {
                         Image(systemName: "trash")
                         Text("코스 삭제하기")
                     }
-                    .font(.system(size: 16, weight: .medium))
+                    .rtBodyLarge()
+                    .fontWeight(.medium)
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(.vertical, 16)
                     .background(Color(UIColor.systemBackground))
-                    .foregroundColor(.red)
-                    .cornerRadius(16)
+                    .foregroundColor(.rtError)
+                    .cornerRadius(20)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.red.opacity(0.5), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.rtError.opacity(0.5), lineWidth: 1)
                     )
                 }
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
     }
     
     // MARK: - 코스 상세 정보 섹션
     var courseDetailsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("코스 정보")
-                .font(.system(size: 18, weight: .semibold))
-            
-            // 코스 좌표 수
-            HStack {
-                Image(systemName: "point.3.connected.trianglepath.dotted")
-                    .foregroundColor(Color(red: 89/255, green: 86/255, blue: 214/255))
-                    .frame(width: 24, height: 24)
+        RTCardView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("코스 정보")
+                    .rtHeading3()
                 
-                Text("트래킹 포인트")
-                    .font(.system(size: 16))
+                // 코스 좌표 수
+                CourseDetailRow(icon: "point.3.connected.trianglepath.dotted", title: "트래킹 포인트", value: "\(course.coordinates.count)개", color: .rtPrimary)
                 
-                Spacer()
+                Divider()
                 
-                Text("\(course.coordinates.count)개")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.gray)
+                // 누적 고도 상승
+                CourseDetailRow(icon: "arrow.up.forward", title: "고도 상승", value: "\(Int(calculateElevationGain()))m", color: .rtSuccess)
+                
+                Divider()
+                
+                // 누적 고도 하강
+                CourseDetailRow(icon: "arrow.down.forward", title: "고도 하강", value: "\(Int(calculateElevationLoss()))m", color: .rtError)
             }
-            .padding(.vertical, 8)
-            
-            Divider()
-            
-            // 누적 고도 상승
-            HStack {
-                Image(systemName: "arrow.up.forward")
-                    .foregroundColor(Color(red: 76/255, green: 175/255, blue: 80/255))
-                    .frame(width: 24, height: 24)
-                
-                Text("고도 상승")
-                    .font(.system(size: 16))
-                
-                Spacer()
-                
-                Text("\(Int(calculateElevationGain()))m")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.gray)
-            }
-            .padding(.vertical, 8)
-            
-            Divider()
-            
-            // 누적 고도 하강
-            HStack {
-                Image(systemName: "arrow.down.forward")
-                    .foregroundColor(Color(red: 244/255, green: 67/255, blue: 54/255))
-                    .frame(width: 24, height: 24)
-                
-                Text("고도 하강")
-                    .font(.system(size: 16))
-                
-                Spacer()
-                
-                Text("\(Int(calculateElevationLoss()))m")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.gray)
-            }
-            .padding(.vertical, 8)
-            
-            // 추가 정보가 있다면 여기에 추가
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
+    }
+    
+    // 코스 상세 행 컴포넌트
+    struct CourseDetailRow: View {
+        var icon: String
+        var title: String
+        var value: String
+        var color: Color
+        
+        var body: some View {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .frame(width: 24)
+                
+                Text(title)
+                    .rtBodyLarge()
+                
+                Spacer()
+                
+                Text(value)
+                    .rtBodyLarge()
+                    .foregroundColor(.gray)
+            }
+            .padding(.vertical, 4)
+        }
     }
     
     // MARK: - 헬퍼 메서드
+    // 안전 영역 상단 높이를 가져오는 함수
+    func getSafeAreaTop() -> CGFloat {
+        let keyWindow = UIApplication.shared.connectedScenes
+            .filter { $0.activationState == .foregroundActive }
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows
+            .filter { $0.isKeyWindow }
+            .first
+        
+        return keyWindow?.safeAreaInsets.top ?? 0
+    }
+    
     // 초기 데이터 설정
     private func setupInitialData() {
         setupMapRegion()
@@ -547,7 +542,6 @@ struct CourseDetailView: View {
                 let ratio = (Double(currentKm) * 1000 - (distance - segmentDistance)) / segmentDistance
                 let interpolatedLat = lastCoord.latitude + (currentCoord.latitude - lastCoord.latitude) * ratio
                 let interpolatedLng = lastCoord.longitude + (currentCoord.longitude - lastCoord.longitude) * ratio
-
                 
                 markers.append((currentKm, CLLocationCoordinate2D(
                     latitude: interpolatedLat,
@@ -565,10 +559,7 @@ struct CourseDetailView: View {
     
     // 고도 프로파일 계산 (실제 앱에서는 API나 CoreLocation에서 고도 정보 활용)
     private func calculateElevationProfile() {
-        // 예시: 임의의 고도 데이터 생성 (실제로는 좌표에서 고도 정보 추출)
-        // 실제 앱에서는 CLLocation의 altitude 속성이나 외부 API를 사용해야 합니다
-        
-        // 현재는 간단한 예시 데이터를 생성합니다
+        // 예시: 임의의 고도 데이터 생성
         elevationData = []
         
         // 코스 좌표 수에 따라 고도 데이터 생성
@@ -640,10 +631,9 @@ struct CourseDetailView: View {
                 
                 // 0.5초 후 러닝 시작 (뷰 전환 후)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                // MapViewModel에 코스 팔로우 모드로 러닝 시작
+                    // MapViewModel에 코스 팔로우 모드로 러닝 시작
                     viewModel.startRecordingFollowCourse(course)
-
-                            }
+                }
             }
         }
     }
@@ -669,7 +659,7 @@ struct CourseDetailView: View {
                     print("Error updating course: \(error)")
                     // 에러 처리
                 } else {
-                    // 성공 시 코스 목록 갱신 (실제 구현에서는 코스 객체 자체를 업데이트)
+                    // 성공 시 코스 목록 갱신
                     viewModel.loadMyCourses()
                 }
             }
@@ -693,37 +683,39 @@ struct CourseDetailView: View {
     }
 }
 
-// MARK: - 통계 카드 컴포넌트
-struct StatisticCard: View {
+// MARK: - 강화된 통계 카드 컴포넌트
+struct EnhancedStatisticCard: View {
     let title: String
     let value: String
     let icon: String
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
+        RTCardView {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.system(size: 14))
+                        .foregroundColor(color)
+                        .frame(width: 28, height: 28)
+                        .background(color.opacity(0.1))
+                        .clipShape(Circle())
+                    
+                    Text(title)
+                        .rtBodySmall()
+                        .foregroundColor(.gray)
+                }
                 
-                Text(title)
-                    .font(.system(size: 14))
-                    .foregroundColor(.gray)
+                Text(value)
+                    .rtHeading3()
             }
-            
-            Text(value)
-                .font(.system(size: 20, weight: .bold))
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
 }
 
-// MARK: - 고도 차트 뷰
-struct ElevationChartView: View {
+// MARK: - 강화된 고도 차트 뷰
+struct EnhancedElevationChartView: View {
     let elevationData: [Double]
     let distance: Double
     
@@ -775,346 +767,412 @@ struct ElevationChartView: View {
                 .fill(
                     LinearGradient(
                         gradient: Gradient(colors: [
-                            Color(red: 89/255, green: 86/255, blue: 214/255).opacity(0.8),
-                            Color(red: 89/255, green: 86/255, blue: 214/255).opacity(0.1)
+                            Color.rtPrimary.opacity(0.7),
+                            Color.rtPrimary.opacity(0.1)
                         ]),
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                                   )
-                                   
-                                   // 고도 차트 선
-                                   Path { path in
-                                       guard elevationData.count > 1 else { return }
-                                       
-                                       let maxElevation = elevationData.max() ?? 0
-                                       let minElevation = elevationData.min() ?? 0
-                                       let elevationRange = max(maxElevation - minElevation, 10) // 최소 10m 범위
-                                       
-                                       let width = geometry.size.width
-                                       let height = geometry.size.height
-                                       let stepX = width / CGFloat(elevationData.count - 1)
-                                       
-                                       // 첫 지점 설정
-                                       path.move(to: CGPoint(
-                                           x: 0,
-                                           y: height - CGFloat((elevationData[0] - minElevation) / elevationRange) * height
-                                       ))
-                                       
-                                       // 나머지 지점 연결
-                                       for i in 1..<elevationData.count {
-                                           let x = stepX * CGFloat(i)
-                                           let y = height - CGFloat((elevationData[i] - minElevation) / elevationRange) * height
-                                           path.addLine(to: CGPoint(x: x, y: y))
-                                       }
-                                   }
-                                   .stroke(Color(red: 89/255, green: 86/255, blue: 214/255), lineWidth: 2)
-                                   
-                                   // 고도 레이블
-                                   HStack {
-                                       VStack(alignment: .leading, spacing: 0) {
-                                           if let maxElevation = elevationData.max() {
-                                               Text("\(Int(maxElevation))m")
-                                                   .font(.system(size: 10))
-                                                   .foregroundColor(.gray)
-                                                   .padding(.bottom, geometry.size.height - 15)
-                                           }
-                                           
-                                           if let minElevation = elevationData.min() {
-                                               Text("\(Int(minElevation))m")
-                                                   .font(.system(size: 10))
-                                                   .foregroundColor(.gray)
-                                           }
-                                       }
-                                       
-                                       Spacer()
-                                       
-                                       // 거리 레이블
-                                       VStack(alignment: .trailing, spacing: 0) {
-                                           Spacer()
-                                           Text("\(Int(distance / 1000))km")
-                                               .font(.system(size: 10))
-                                               .foregroundColor(.gray)
-                                       }
-                                   }
-                                   .padding(.horizontal, 4)
-                               }
-                           }
-                           .padding(8)
-                           .background(Color(UIColor.secondarySystemBackground).opacity(0.5))
-                           .cornerRadius(12)
-                       }
+                )
+                
+                // 고도 차트 선
+                Path { path in
+                    guard elevationData.count > 1 else { return }
+                    
+                    let maxElevation = elevationData.max() ?? 0
+                    let minElevation = elevationData.min() ?? 0
+                    let elevationRange = max(maxElevation - minElevation, 10) // 최소 10m 범위
+                    
+                    let width = geometry.size.width
+                    let height = geometry.size.height
+                    let stepX = width / CGFloat(elevationData.count - 1)
+                    
+                    // 첫 지점 설정
+                    path.move(to: CGPoint(
+                        x: 0,
+                        y: height - CGFloat((elevationData[0] - minElevation) / elevationRange) * height
+                    ))
+                    
+                    // 나머지 지점 연결
+                    for i in 1..<elevationData.count {
+                        let x = stepX * CGFloat(i)
+                        let y = height - CGFloat((elevationData[i] - minElevation) / elevationRange) * height
+                        path.addLine(to: CGPoint(x: x, y: y))
                     }
+                }
+                .stroke(Color.rtPrimary, lineWidth: 2)
+                
+                // 고도 레이블
+                HStack {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if let maxElevation = elevationData.max() {
+                            Text("\(Int(maxElevation))m")
+                                .rtCaption()
+                                .foregroundColor(.gray)
+                                .padding(.bottom, geometry.size.height - 15)
+                        }
+                        
+                        if let minElevation = elevationData.min() {
+                            Text("\(Int(minElevation))m")
+                                .rtCaption()
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // 거리 레이블
+                    VStack(alignment: .trailing, spacing: 0) {
+                        Spacer()
+                        Text("\(Int(distance / 1000))km")
+                            .rtCaption()
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+        .padding(8)
+        .background(Color(UIColor.secondarySystemBackground).opacity(0.5))
+        .cornerRadius(12)
+    }
+}
 
-                    // MARK: - 고도 미니 차트 뷰
-                    struct ElevationMiniChartView: View {
-                       let elevationData: [Double]
-                       
-                       var body: some View {
-                           GeometryReader { geometry in
-                               Path { path in
-                                   guard elevationData.count > 1 else { return }
-                                   
-                                   let maxElevation = elevationData.max() ?? 0
-                                   let minElevation = elevationData.min() ?? 0
-                                   let elevationRange = max(maxElevation - minElevation, 10) // 최소 10m 범위
-                                   
-                                   let width = geometry.size.width
-                                   let height = geometry.size.height
-                                   let stepX = width / CGFloat(elevationData.count - 1)
-                                   
-                                   // 첫 지점 설정
-                                   path.move(to: CGPoint(
-                                       x: 0,
-                                       y: height - CGFloat((elevationData[0] - minElevation) / elevationRange) * height
-                                   ))
-                                   
-                                   // 나머지 지점 연결
-                                   for i in 1..<elevationData.count {
-                                       let x = stepX * CGFloat(i)
-                                       let y = height - CGFloat((elevationData[i] - minElevation) / elevationRange) * height
-                                       path.addLine(to: CGPoint(x: x, y: y))
-                                   }
-                               }
-                               .stroke(Color(red: 89/255, green: 86/255, blue: 214/255), lineWidth: 2)
-                           }
-                           .padding(8)
-                           .background(Color(UIColor.secondarySystemBackground).opacity(0.5))
-                           .cornerRadius(12)
-                       }
-                    }
+// MARK: - 강화된 고도 미니 차트 뷰
+struct EnhancedElevationMiniChartView: View {
+    let elevationData: [Double]
+    
+    var body: some View {
+        GeometryReader { geometry in
+            Path { path in
+                guard elevationData.count > 1 else { return }
+                
+                let maxElevation = elevationData.max() ?? 0
+                let minElevation = elevationData.min() ?? 0
+                let elevationRange = max(maxElevation - minElevation, 10) // 최소 10m 범위
+                
+                let width = geometry.size.width
+                let height = geometry.size.height
+                let stepX = width / CGFloat(elevationData.count - 1)
+                
+                // 첫 지점 설정
+                path.move(to: CGPoint(
+                    x: 0,
+                    y: height - CGFloat((elevationData[0] - minElevation) / elevationRange) * height
+                ))
+                
+                // 나머지 지점 연결
+                for i in 1..<elevationData.count {
+                    let x = stepX * CGFloat(i)
+                    let y = height - CGFloat((elevationData[i] - minElevation) / elevationRange) * height
+                    path.addLine(to: CGPoint(x: x, y: y))
+                }
+            }
+            .stroke(Color.rtPrimary, lineWidth: 2)
+        }
+        .padding(8)
+        .background(Color(UIColor.secondarySystemBackground).opacity(0.5))
+        .cornerRadius(12)
+    }
+}
 
-                    // MARK: - iOS 16 이하에서 코스를 표시하기 위한 지도 뷰
-                    struct CourseDetailMapView: UIViewRepresentable {
-                       @Binding var region: MKCoordinateRegion
-                       var coordinates: [Coordinate]
-                       var kilometerMarkers: [(Int, CLLocationCoordinate2D)]
-                       
-                       func makeUIView(context: Context) -> MKMapView {
-                           let mapView = MKMapView()
-                           mapView.delegate = context.coordinator
-                           mapView.setRegion(region, animated: true)
-                           return mapView
-                       }
-                       
-                       func updateUIView(_ uiView: MKMapView, context: Context) {
-                           uiView.setRegion(region, animated: true)
-                           
-                           // 기존 오버레이와 어노테이션 제거
-                           uiView.removeOverlays(uiView.overlays)
-                           uiView.removeAnnotations(uiView.annotations)
-                           
-                           // 코스 경로 추가
-                           if !coordinates.isEmpty {
-                               let mapCoords = coordinates.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
-                               let polyline = MKPolyline(coordinates: mapCoords, count: mapCoords.count)
-                               uiView.addOverlay(polyline)
-                               
-                               // 시작점과 종료점 어노테이션 추가
-                               if let firstCoord = coordinates.first {
-                                   let startPin = MKPointAnnotation()
-                                   startPin.coordinate = CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng)
-                                   startPin.title = "시작"
-                                   uiView.addAnnotation(startPin)
-                               }
-                               
-                               if let lastCoord = coordinates.last, coordinates.count > 1 {
-                                   let endPin = MKPointAnnotation()
-                                   endPin.coordinate = CLLocationCoordinate2D(latitude: lastCoord.lat, longitude: lastCoord.lng)
-                                   endPin.title = "종료"
-                                   uiView.addAnnotation(endPin)
-                               }
-                               
-                               // 킬로미터 마커 추가
-                               for (km, coordinate) in kilometerMarkers {
-                                   let kmPin = MKPointAnnotation()
-                                   kmPin.coordinate = coordinate
-                                   kmPin.title = "\(km)km"
-                                   uiView.addAnnotation(kmPin)
-                               }
-                           }
-                       }
-                       
-                       func makeCoordinator() -> Coordinator {
-                           Coordinator(self)
-                       }
-                       
-                       class Coordinator: NSObject, MKMapViewDelegate {
-                           var parent: CourseDetailMapView
-                           
-                           init(_ parent: CourseDetailMapView) {
-                               self.parent = parent
-                           }
-                           
-                           func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-                               if let polyline = overlay as? MKPolyline {
-                                   let renderer = MKPolylineRenderer(polyline: polyline)
-                                   renderer.strokeColor = UIColor(red: 89/255, green: 86/255, blue: 214/255, alpha: 1)
-                                   renderer.lineWidth = 4
-                                   return renderer
-                               }
-                               return MKOverlayRenderer(overlay: overlay)
-                           }
-                       }
+// MARK: - iOS 16 이하를 위한 강화된 코스 지도 뷰
+struct EnhancedCourseMapView: UIViewRepresentable {
+    @Binding var region: MKCoordinateRegion
+    var coordinates: [Coordinate]
+    var kilometerMarkers: [(Int, CLLocationCoordinate2D)]
+    
+    func makeUIView(context: Context) -> MKMapView {
+        let mapView = MKMapView()
+        mapView.delegate = context.coordinator
+        mapView.region = region
+        
+        // 지도 스타일 설정
+        mapView.mapType = .standard
+        
+        // 컨트롤 표시
+        mapView.showsCompass = true
+        mapView.showsScale = true
+        
+        return mapView
+    }
+    
+    func updateUIView(_ uiView: MKMapView, context: Context) {
+        uiView.region = region
+        
+        // 기존 오버레이와 어노테이션 제거
+        uiView.removeOverlays(uiView.overlays)
+        uiView.removeAnnotations(uiView.annotations)
+        
+        // 코스 경로가 없으면 종료
+        guard !coordinates.isEmpty else { return }
+        
+        // 좌표 변환
+        let mapCoords = coordinates.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
+        
+        // 시작점과 종료점 어노테이션 추가
+        if let first = mapCoords.first {
+            let startPin = CourseAnnotation(coordinate: first, title: "시작", type: .start)
+            uiView.addAnnotation(startPin)
+        }
+        
+        if let last = mapCoords.last, mapCoords.count > 1 {
+            let endPin = CourseAnnotation(coordinate: last, title: "종료", type: .end)
+            uiView.addAnnotation(endPin)
+        }
+        
+        // 킬로미터 마커 추가
+        for (km, coordinate) in kilometerMarkers {
+            let kmPin = CourseAnnotation(coordinate: coordinate, title: "\(km)km", type: .kilometer)
+            uiView.addAnnotation(kmPin)
+        }
+        
+        // 코스 경로 폴리라인 추가
+        let polyline = MKPolyline(coordinates: mapCoords, count: mapCoords.count)
+        uiView.addOverlay(polyline)
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    // 코스 어노테이션 유형
+    class CourseAnnotation: NSObject, MKAnnotation {
+        enum AnnotationType {
+            case start, end, kilometer
+        }
+        
+        let coordinate: CLLocationCoordinate2D
+        let title: String?
+        let type: AnnotationType
+        
+        init(coordinate: CLLocationCoordinate2D, title: String, type: AnnotationType) {
+            self.coordinate = coordinate
+            self.title = title
+            self.type = type
+        }
+    }
+    
+    class Coordinator: NSObject, MKMapViewDelegate {
+        var parent: EnhancedCourseMapView
+        
+        init(_ parent: EnhancedCourseMapView) {
+            self.parent = parent
+        }
+        
+        // 커스텀 어노테이션 뷰
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            if let courseAnnotation = annotation as? CourseAnnotation {
+                // 어노테이션 타입에 따라 다르게 처리
+                switch courseAnnotation.type {
+                case .start, .end:
+                    let identifier = "CoursePointAnnotation"
+                    var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                    
+                    if annotationView == nil {
+                        annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                        annotationView?.canShowCallout = true
                     }
+                    
+                    annotationView?.annotation = annotation
+                    
+                    // 어노테이션 스타일 설정
+                    if courseAnnotation.type == .start {
+                        annotationView?.markerTintColor = UIColor(Color.rtSuccess)
+                        annotationView?.glyphImage = UIImage(systemName: "flag.fill")
+                    } else {
+                        annotationView?.markerTintColor = UIColor(Color.rtError)
+                        annotationView?.glyphImage = UIImage(systemName: "flag.checkered")
+                    }
+                    
+                    return annotationView
+                    
+                case .kilometer:
+                    let identifier = "KilometerAnnotation"
+                    var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+                    
+                    if annotationView == nil {
+                        annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                        annotationView?.canShowCallout = true
+                    }
+                    
+                    annotationView?.annotation = annotation
+                    
+                    // 킬로미터 마커 스타일 설정
+                    let label = UILabel(frame: CGRect(x: 0, y: 0, width: 30, height: 20))
+                    label.text = courseAnnotation.title
+                    label.font = UIFont.systemFont(ofSize: 10, weight: .bold)
+                    label.textAlignment = .center
+                    label.textColor = UIColor(Color.rtPrimary)
+                    label.backgroundColor = .white
+                    label.layer.cornerRadius = 8
+                    label.layer.masksToBounds = true
+                    
+                    annotationView?.contentMode = .scaleAspectFit
+                    annotationView?.addSubview(label)
+                    annotationView?.frame.size = label.frame.size
+                    
+                    return annotationView
+                }
+            }
+            
+            return nil
+        }
+        
+        // 폴리라인 스타일 정의
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let polyline = overlay as? MKPolyline {
+                let renderer = MKGradientPolylineRenderer(polyline: polyline)
+                renderer.setColors([
+                    UIColor(Color.rtPrimary),
+                    UIColor(Color.rtSecondary)
+                ], locations: [0, 1])
+                renderer.lineCap = .round
+                renderer.lineWidth = 4
+                return renderer
+            }
+            
+            return MKOverlayRenderer(overlay: overlay)
+        }
+    }
+}
 
-                    // MARK: - 코스 요약 시트
-                    struct CourseSummarySheet: View {
-                       let course: Course
-                       let elevationData: [Double]
-                       let averagePace: Double
-                       let onDismiss: () -> Void
-                       let onStartRunning: () -> Void
-                       
-                       var body: some View {
-                           NavigationView {
-                               List {
-                                   Section(header: Text("코스 요약")) {
-                                       HStack {
-                                           Text("이름")
-                                           Spacer()
-                                           Text(course.title)
-                                               .foregroundColor(.gray)
-                                       }
-                                       
-                                       HStack {
-                                           Text("거리")
-                                           Spacer()
-                                           Text(Formatters.formatDistance(course.distance))
-                                               .foregroundColor(.gray)
-                                       }
-                                       
-                                       HStack {
-                                           Text("예상 시간")
-                                           Spacer()
-                                           Text(Formatters.formatDuration(Int(course.distance / 1000 * averagePace)))
-                                               .foregroundColor(.gray)
-                                       }
-                                       
-                                       HStack {
-                                           Text("생성일")
-                                           Spacer()
-                                           Text(Formatters.formatDate(course.createdAt))
-                                               .foregroundColor(.gray)
-                                       }
-                                   }
-                                   
-                                   Section(header: Text("고도 정보")) {
-                                       if !elevationData.isEmpty {
-                                           HStack {
-                                               Text("고도 상승")
-                                               Spacer()
-                                               Text("\(Int(calculateElevationGain(elevationData: elevationData)))m")
-                                                   .foregroundColor(.gray)
-                                           }
-                                           
-                                           HStack {
-                                               Text("고도 하강")
-                                               Spacer()
-                                               Text("\(Int(calculateElevationLoss(elevationData: elevationData)))m")
-                                                   .foregroundColor(.gray)
-                                           }
-                                           
-                                           HStack {
-                                               Text("최고 고도")
-                                               Spacer()
-                                               Text("\(Int(elevationData.max() ?? 0))m")
-                                                   .foregroundColor(.gray)
-                                           }
-                                           
-                                           HStack {
-                                               Text("최저 고도")
-                                               Spacer()
-                                               Text("\(Int(elevationData.min() ?? 0))m")
-                                                   .foregroundColor(.gray)
-                                           }
-                                       } else {
-                                           Text("고도 정보가 없습니다")
-                                               .foregroundColor(.gray)
-                                       }
-                                   }
-                                   
-                                   Section {
-                                       Button(action: onStartRunning) {
-                                           HStack {
-                                               Spacer()
-                                               Image(systemName: "figure.run")
-                                               Text("이 코스로 달리기")
-                                               Spacer()
-                                           }
-                                           .font(.system(size: 16, weight: .medium))
-                                       }
-                                       .foregroundColor(.white)
-                                       .listRowBackground(Color(red: 89/255, green: 86/255, blue: 214/255))
-                                   }
-                               }
-                               .navigationTitle("코스 정보")
-                               .navigationBarTitleDisplayMode(.inline)
-                               .toolbar {
-                                   ToolbarItem(placement: .navigationBarLeading) {
-                                       Button("닫기") {
-                                           onDismiss()
-                                       }
-                                   }
-                               }
-                           }
-                       }
-                       
-                       // 누적 고도 상승 계산
-                       private func calculateElevationGain(elevationData: [Double]) -> Double {
-                           guard elevationData.count >= 2 else { return 0 }
-                           
-                           var totalGain: Double = 0
-                           
-                           for i in 1..<elevationData.count {
-                               let diff = elevationData[i] - elevationData[i-1]
-                               if diff > 0 {
-                                   totalGain += diff
-                               }
-                           }
-                           
-                           return totalGain
-                       }
-                       
-                       // 누적 고도 하강 계산
-                       private func calculateElevationLoss(elevationData: [Double]) -> Double {
-                           guard elevationData.count >= 2 else { return 0 }
-                           
-                           var totalLoss: Double = 0
-                           
-                           for i in 1..<elevationData.count {
-                               let diff = elevationData[i] - elevationData[i-1]
-                               if diff < 0 {
-                                   totalLoss += abs(diff)
-                               }
-                           }
-                           
-                           return totalLoss
-                       }
+// MARK: - 코스 요약 시트
+struct CourseSummarySheet: View {
+    let course: Course
+    let elevationData: [Double]
+    let averagePace: Double
+    let onDismiss: () -> Void
+    let onStartRunning: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            List {
+                Section(header: Text("코스 요약")) {
+                    InfoRow(title: "이름", value: course.title)
+                    InfoRow(title: "거리", value: Formatters.formatDistance(course.distance))
+                    InfoRow(title: "예상 시간", value: Formatters.formatDuration(Int(course.distance / 1000 * averagePace)))
+                    InfoRow(title: "생성일", value: Formatters.formatDate(course.createdAt))
+                    InfoRow(title: "공개 여부", value: course.isPublic ? "공개" : "비공개")
+                }
+                
+                Section(header: Text("고도 정보")) {
+                    if !elevationData.isEmpty {
+                        InfoRow(title: "고도 상승", value: "\(Int(calculateElevationGain(elevationData: elevationData)))m")
+                        InfoRow(title: "고도 하강", value: "\(Int(calculateElevationLoss(elevationData: elevationData)))m")
+                        InfoRow(title: "최고 고도", value: "\(Int(elevationData.max() ?? 0))m")
+                        InfoRow(title: "최저 고도", value: "\(Int(elevationData.min() ?? 0))m")
+                    } else {
+                        Text("고도 정보가 없습니다")
+                            .foregroundColor(.gray)
                     }
+                }
+                
+                Section {
+                    Button(action: onStartRunning) {
+                        HStack {
+                            Spacer()
+                            Image(systemName: "figure.run")
+                            Text("이 코스로 달리기")
+                            Spacer()
+                        }
+                        .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .listRowBackground(LinearGradient.rtPrimaryGradient)
+                }
+            }
+            .listStyle(InsetGroupedListStyle())
+            .navigationTitle("코스 정보")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("닫기") {
+                        onDismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    // 정보 행 컴포넌트
+    struct InfoRow: View {
+        var title: String
+        var value: String
+        
+        var body: some View {
+            HStack {
+                Text(title)
+                Spacer()
+                Text(value)
+                    .foregroundColor(.gray)
+            }
+        }
+    }
+    
+    // 누적 고도 상승 계산
+    private func calculateElevationGain(elevationData: [Double]) -> Double {
+        guard elevationData.count >= 2 else { return 0 }
+        
+        var totalGain: Double = 0
+        
+        for i in 1..<elevationData.count {
+            let diff = elevationData[i] - elevationData[i-1]
+            if diff > 0 {
+                totalGain += diff
+            }
+        }
+        
+        return totalGain
+    }
+    
+    // 누적 고도 하강 계산
+    private func calculateElevationLoss(elevationData: [Double]) -> Double {
+        guard elevationData.count >= 2 else { return 0 }
+        
+        var totalLoss: Double = 0
+        
+        for i in 1..<elevationData.count {
+            let diff = elevationData[i] - elevationData[i-1]
+            if diff < 0 {
+                totalLoss += abs(diff)
+            }
+        }
+        
+        return totalLoss
+    }
+}
 
-                    struct CourseDetailView_Previews: PreviewProvider {
-                       static var previews: some View {
-                           let sampleCoordinates = [
-                               Coordinate(lat: 37.5665, lng: 126.9780, timestamp: Date().timeIntervalSince1970 - 1000),
-                               Coordinate(lat: 37.5668, lng: 126.9785, timestamp: Date().timeIntervalSince1970 - 900),
-                               Coordinate(lat: 37.5675, lng: 126.9790, timestamp: Date().timeIntervalSince1970 - 800),
-                               Coordinate(lat: 37.5680, lng: 126.9795, timestamp: Date().timeIntervalSince1970 - 700),
-                               Coordinate(lat: 37.5685, lng: 126.9800, timestamp: Date().timeIntervalSince1970 - 600)
-                           ]
-                           
-                           let sampleCourse = Course(
-                               id: "sample-id",
-                               title: "서울숲 러닝 코스",
-                               distance: 5200,
-                               coordinates: sampleCoordinates,
-                               createdAt: Date(),
-                               createdBy: "user-id",
-                               isPublic: true
-                           )
-                           
-                           return CourseDetailView(course: sampleCourse)
-                               .environmentObject(MapViewModel())
-                               .environmentObject(LocationService())
-                       }
-                    }
+// MARK: - 카드 뷰 스타일 (Utils/ThemeManager.swift에 정의하는 것이 좋음)
+struct RTCardView<Content: View>: View {
+    var content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        content
+            .padding(16)
+            .background(Color.rtCard)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
+    }
+}
+
+// MARK: - 모서리 라운딩 확장
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
