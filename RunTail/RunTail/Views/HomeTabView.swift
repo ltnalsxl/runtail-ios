@@ -2,8 +2,7 @@
 //  HomeTabView.swift
 //  RunTail
 //
-//  Created by 이수민 on 5/6/25.
-//  Updated with enhanced course visualization
+//  Updated on 5/10/25.
 //
 
 import SwiftUI
@@ -25,9 +24,6 @@ struct HomeTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 상단 상태 바
-            statusBar
-            
             // 지도 영역 - 상단 절반
             mapSection
             
@@ -36,14 +32,14 @@ struct HomeTabView: View {
             
             // 스크롤 가능한 컨텐츠 영역
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 24) {
                     // 최근 활동 섹션
                     recentRunsSection
                     
                     // 탐색 섹션
                     categoriesSection
                 }
-                .padding(.bottom, 80) // 하단 탭바 공간 확보
+                .padding(.bottom, 100) // 하단 탭바 공간 확보
             }
         }
         .alert("코스 저장", isPresented: $viewModel.showSaveAlert) {
@@ -64,9 +60,7 @@ struct HomeTabView: View {
                 }
             })
             
-            Button("취소", role: .cancel) {
-                // 취소 처리 - 추가 작업 없음
-            }
+            Button("취소", role: .cancel) {}
         } message: {
             Text("방금 완료한 러닝을 코스로 저장합니다.")
         }
@@ -75,48 +69,7 @@ struct HomeTabView: View {
                 RoutePreviewView(course: course, viewModel: viewModel, locationService: locationService)
             }
         }
-    }
-    
-    // MARK: - 상단 상태 바
-    var statusBar: some View {
-        HStack {
-            Text("RunTail")
-                .font(.system(size: 18, weight: .bold))
-            
-            Spacer()
-            
-            // GPS 상태 표시
-            HStack(spacing: 4) {
-                Text("GPS")
-                    .font(.system(size: 12, weight: .medium))
-                
-                // GPS 신호 강도에 따른 색상 변경
-                Circle()
-                    .fill(gpsSignalColor)
-                    .frame(width: 8, height: 8)
-            }
-            .foregroundColor(.white)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(viewModel.themeGradient)
-        .foregroundColor(.white)
-    }
-    
-    // GPS 신호 강도에 따른 색상
-    var gpsSignalColor: Color {
-        switch locationService.gpsSignalStrength {
-        case 0:
-            return .red
-        case 1:
-            return .orange
-        case 2:
-            return .yellow
-        case 3, 4:
-            return .green
-        default:
-            return .gray
-        }
+        .background(Color.rtBackground)
     }
     
     // MARK: - 지도 섹션
@@ -135,7 +88,7 @@ struct HomeTabView: View {
                             CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
                         })
                         .stroke(
-                            viewModel.isPaused ? Color.orange : viewModel.themeColor,
+                            viewModel.isPaused ? Color.rtWarning : Color.rtPrimary,
                             lineWidth: 4
                         )
                     }
@@ -147,7 +100,7 @@ struct HomeTabView: View {
                             Annotation("시작", coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng)) {
                                 Image(systemName: "flag.fill")
                                     .font(.system(size: 24))
-                                    .foregroundColor(.green)
+                                    .foregroundColor(.rtSuccess)
                             }
                         }
                         
@@ -156,7 +109,7 @@ struct HomeTabView: View {
                             Annotation("종료", coordinate: CLLocationCoordinate2D(latitude: lastCoord.lat, longitude: lastCoord.lng)) {
                                 Image(systemName: "flag.checkered")
                                     .font(.system(size: 24))
-                                    .foregroundColor(.red)
+                                    .foregroundColor(.rtError)
                             }
                         }
                         
@@ -165,7 +118,7 @@ struct HomeTabView: View {
                             CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
                         })
                         .stroke(
-                            Color.blue.opacity(0.8),
+                            Color.rtSecondary.opacity(0.8),
                             lineWidth: 5
                         )
                     }
@@ -177,14 +130,14 @@ struct HomeTabView: View {
                         ForEach(Array(nearbyCourses.prefix(3)), id: \.id) { course in
                             if let firstCoord = course.coordinates.first {
                                 Marker(course.title, coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng))
-                                    .tint(viewModel.themeColor)
+                                    .tint(Color.rtPrimary)
                             }
                             
                             MapPolyline(coordinates: course.coordinates.map {
                                 CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
                             })
                             .stroke(
-                                viewModel.themeColor.opacity(0.6),
+                                Color.rtPrimary.opacity(0.6),
                                 lineWidth: 3
                             )
                         }
@@ -196,10 +149,10 @@ struct HomeTabView: View {
                     MapCompass()
                     MapScaleView()
                 }
-                .frame(height: UIScreen.main.bounds.height * 0.5)
+                .frame(height: UIScreen.main.bounds.height * 0.4)
             } else {
                 // iOS 16 이하용 맵 뷰
-                BasicMapView(
+                EnhancedMapView(
                     region: $locationService.region,
                     showsUserLocation: true,
                     recordedCoordinates: viewModel.isRecording ? viewModel.recordedCoordinates : [],
@@ -207,14 +160,13 @@ struct HomeTabView: View {
                     nearbyCourses: !viewModel.isRecording && !showRoutePreview
                         ? viewModel.findNearbyCoursesFor(coordinate: locationService.lastLocation?.coordinate ?? CLLocationCoordinate2D(), radius: 5000)
                         : [],
-                    isPaused: viewModel.isPaused,
-                    themeColor: UIColor(viewModel.themeColor)
+                    isPaused: viewModel.isPaused
                 )
-                .frame(height: UIScreen.main.bounds.height * 0.5)
+                .frame(height: UIScreen.main.bounds.height * 0.4)
             }
             #else
             // iOS 16 이하용 맵 뷰
-            BasicMapView(
+            EnhancedMapView(
                 region: $locationService.region,
                 showsUserLocation: true,
                 recordedCoordinates: viewModel.isRecording ? viewModel.recordedCoordinates : [],
@@ -222,11 +174,14 @@ struct HomeTabView: View {
                 nearbyCourses: !viewModel.isRecording && !showRoutePreview
                     ? viewModel.findNearbyCoursesFor(coordinate: locationService.lastLocation?.coordinate ?? CLLocationCoordinate2D(), radius: 5000)
                     : [],
-                isPaused: viewModel.isPaused,
-                themeColor: UIColor(viewModel.themeColor)
+                isPaused: viewModel.isPaused
             )
-            .frame(height: UIScreen.main.bounds.height * 0.5)
+            .frame(height: UIScreen.main.bounds.height * 0.4)
             #endif
+            
+            // 지도 컨트롤
+            mapControls
+            
             // 검색 바 - 달리기 중이 아닐 때만 표시
             if !viewModel.isRecording {
                 searchBar
@@ -234,9 +189,6 @@ struct HomeTabView: View {
                     .padding(.top, 16)
                     .frame(maxWidth: .infinity, alignment: .top)
             }
-            
-            // 지도 컨트롤
-            mapControls
             
             // 달리기 시작/종료 버튼
             startRunningButton
@@ -250,92 +202,59 @@ struct HomeTabView: View {
         HStack {
             Image(systemName: "magnifyingglass")
                 .foregroundColor(.gray)
-                .padding(.leading, 4)
+                .padding(.leading, 8)
             
             Text("장소 또는 코스 검색")
-                .font(.system(size: 14))
+                .rtBodySmall()
                 .foregroundColor(.gray)
             
             Spacer()
         }
-        .padding(12)
-        .background(Color.white.opacity(0.95))
-        .cornerRadius(28)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.rtCard)
+                .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
+        )
     }
     
     // MARK: - 지도 컨트롤
-    var mapControls: some View {
-        VStack(spacing: 8) {
-            // 확대 버튼
-            Button(action: {
-                locationService.zoomIn()
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 48, height: 48)
-                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    
-                    Text("+")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.black)
-                }
-            }
+    var mapControls: View {
+        VStack(spacing: 10) {
+            MapControlButton(icon: "plus", action: { locationService.zoomIn() })
+            MapControlButton(icon: "minus", action: { locationService.zoomOut() })
+            MapControlButton(icon: "location.fill", action: { locationService.centerOnUserLocation() })
             
-            // 축소 버튼
-            Button(action: {
-                locationService.zoomOut()
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 48, height: 48)
-                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    
-                    Text("-")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.black)
-                }
-            }
-            
-            // 내 위치로 이동 버튼
-            Button(action: {
-                locationService.centerOnUserLocation()
-            }) {
-                ZStack {
-                    Circle()
-                        .fill(Color.white)
-                        .frame(width: 48, height: 48)
-                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                    
-                    Image(systemName: "location.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(viewModel.themeColor)
-                }
-            }
-            
-            // 코스 미리보기 모드일 때 닫기 버튼
             if showRoutePreview {
-                Button(action: {
+                MapControlButton(icon: "xmark", action: {
                     showRoutePreview = false
                     selectedCourse = nil
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 48, height: 48)
-                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                        
-                        Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.red)
-                    }
-                }
+                })
+                .foregroundColor(.rtError)
             }
         }
-        .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+        .padding(16)
+    }
+    
+    // 지도 컨트롤 버튼
+    struct MapControlButton: View {
+        var icon: String
+        var action: () -> Void
+        var foregroundColor: Color = .rtPrimary
+        
+        var body: some View {
+            Button(action: action) {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(foregroundColor)
+                    .frame(width: 36, height: 36)
+                    .background(Color.rtCard)
+                    .clipShape(Circle())
+                    .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+            }
+        }
     }
     
     // MARK: - 달리기 시작/종료 버튼
@@ -365,478 +284,161 @@ struct HomeTabView: View {
                         Image(systemName: "play.fill")
                             .font(.system(size: 16))
                         Text("\(course.title) 따라 달리기")
-                            .font(.system(size: 16, weight: .semibold))
-                        Spacer()
+                            .rtBodyLarge()
+                            .fontWeight(.semibold)
                     }
-                    .padding(.horizontal, 20)
                     .padding(.vertical, 16)
-                    .background(viewModel.themeGradient)
+                    .frame(maxWidth: .infinity)
+                    .background(LinearGradient.rtPrimaryGradient)
                     .foregroundColor(.white)
-                    .cornerRadius(28)
-                    .shadow(color: viewModel.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .cornerRadius(24)
+                    .shadow(color: Color.rtPrimary.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
             }
             else if viewModel.isRecording {
                 // 달리기 중일 때 표시되는 뷰
                 VStack(spacing: 0) {
-                    HStack {
-                        // 러닝 타이머
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("달리는 중...")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.8))
-                            
-                            Text(formatDuration(viewModel.recordingElapsedTime))
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                        
-                        Spacer()
-                        
-                        // 거리
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("거리")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.8))
-                            
-                            Text(Formatters.formatDistance(viewModel.recordingDistance))
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                        
-                        // 일시정지/재개 버튼
-                        Button(action: {
-                            if viewModel.isPaused {
-                                viewModel.resumeRecording()
-                            } else {
-                                viewModel.pauseRecording()
+                    // 러닝 세션 카드
+                    RunningSessionCard(
+                        elapsedTime: viewModel.recordingElapsedTime,
+                        distance: viewModel.recordingDistance,
+                        pace: calculateCurrentPace(),
+                        isPaused: viewModel.isPaused,
+                        onPause: { viewModel.pauseRecording() },
+                        onResume: { viewModel.resumeRecording() },
+                        onStop: {
+                            // 달리기 종료
+                            viewModel.stopRecording { success, courseId in
+                                if success {
+                                    // 성공 시 코스 리스트 갱신 (저장 대화창에서 저장 버튼 누르면 수행)
+                                }
                             }
-                        }) {
-                            Image(systemName: viewModel.isPaused ? "play.fill" : "pause.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.white)
-                                .frame(width: 44, height: 44)
-                                .background(Color.white.opacity(0.2))
-                                .clipShape(Circle())
                         }
-                        .padding(.leading, 8)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(
-                        viewModel.isPaused ?
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.orange.opacity(0.8), Color.orange.opacity(0.6)]),
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ) :
-                            viewModel.darkGradient
                     )
-                    .cornerRadius(28)
-                    .shadow(color: viewModel.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
-                    
-                    // 종료 버튼
-                    Button(action: {
-                        // 달리기 종료
-                        viewModel.stopRecording { success, courseId in
-                            if success {
-                                // 성공 시 코스 리스트 갱신 (저장 대화창에서 저장 버튼 누르면 수행)
-                            }
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "stop.fill")
-                                .font(.system(size: 16))
-                            Text("달리기 종료")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.red.opacity(0.8))
-                        .foregroundColor(.white)
-                        .cornerRadius(28)
-                        .shadow(color: Color.red.opacity(0.3), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.top, 12)
                 }
             } else {
                 // 기존 코드 (달리기 시작 버튼)
-                Button(action: {
-                    withAnimation(.spring()) {
-                        viewModel.isStartRunExpanded.toggle()
+                VStack(spacing: 0) {
+                    // 메인 시작 버튼
+                    Button(action: {
+                        withAnimation(.spring()) {
+                            viewModel.isStartRunExpanded.toggle()
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 18))
+                            Text("달리기 시작하기")
+                                .rtBodyLarge()
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Image(systemName: viewModel.isStartRunExpanded ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 14))
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(LinearGradient.rtPrimaryGradient)
+                        .foregroundColor(.white)
+                        .cornerRadius(24)
+                        .shadow(color: Color.rtPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
-                }) {
-                    // 기존 UI 유지
-                    HStack {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 16))
-                        Text("달리기 시작하기")
-                            .font(.system(size: 16, weight: .semibold))
-                        Spacer()
-                        Image(systemName: viewModel.isStartRunExpanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 14))
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 16)
-                    .background(viewModel.themeGradient)
-                    .foregroundColor(.white)
-                    .cornerRadius(28)
-                    .shadow(color: viewModel.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
-                
-                if viewModel.isStartRunExpanded {
-                    // 확장 메뉴에 실제 기능 추가
-                    VStack(spacing: 0) {
-                        // 자유 달리기 옵션
-                        Button(action: {
-                            checkBeforeStartRunning { canStart in
-                                if canStart {
+                    
+                    // 확장 메뉴
+                    if viewModel.isStartRunExpanded {
+                        VStack(spacing: 0) {
+                            // 자유 달리기 옵션
+                            Button(action: {
+                                checkBeforeStartRunning { canStart in
+                                    if canStart {
+                                        withAnimation(.spring()) {
+                                            viewModel.isStartRunExpanded = false
+                                            
+                                            // 위치 서비스 정확도 높이기
+                                            locationService.startHighAccuracyLocationUpdates()
+                                            locationService.onLocationUpdate = { coordinate in
+                                                viewModel.addLocationToRecording(coordinate: coordinate)
+                                            }
+                                            
+                                            // 러닝 기록 시작
+                                            viewModel.startRecording()
+                                        }
+                                    }
+                                }
+                            }) {
+                                StartRunOption(
+                                    icon: "play.fill",
+                                    title: "자유 달리기",
+                                    subtitle: "달리면서 새 코스 만들기",
+                                    color: .rtPrimary
+                                )
+                            }
+                            
+                            Divider()
+                                .padding(.horizontal)
+                            
+                            // 코스 따라 달리기 옵션
+                            Button(action: {
+                                // 현재 위치 주변 코스 목록 가져오기
+                                if let userLocation = locationService.lastLocation?.coordinate {
+                                    let nearbyCourses = viewModel.findNearbyCoursesFor(coordinate: userLocation, radius: 5000)
+                                    
                                     withAnimation(.spring()) {
                                         viewModel.isStartRunExpanded = false
                                         
-                                        // 위치 서비스 정확도 높이기
-                                        locationService.startHighAccuracyLocationUpdates()
-                                        locationService.onLocationUpdate = { coordinate in
-                                            viewModel.addLocationToRecording(coordinate: coordinate)
+                                        // 주변 코스가 있으면 첫 번째 코스 미리보기
+                                        if let firstCourse = nearbyCourses.first {
+                                            selectedCourse = firstCourse
+                                            showRoutePreview = true
+                                        } else {
+                                            // 주변 코스가 없을 경우 알림
+                                            print("주변에 저장된 코스가 없습니다.")
                                         }
-                                        
-                                        // 러닝 기록 시작
-                                        viewModel.startRecording()
                                     }
                                 }
+                            }) {
+                                StartRunOption(
+                                    icon: "map.fill",
+                                    title: "코스 따라 달리기",
+                                    subtitle: "기존 코스 선택하기",
+                                    color: .rtSecondary
+                                )
                             }
-                        }) {
-                            // 자유 달리기 UI
-                            HStack {
-                                ZStack {
-                                    Circle()
-                                        .fill(viewModel.themeColor.opacity(0.1))
-                                        .frame(width: 48, height: 48)
-                                    Image(systemName: "play.fill")
-                                        .foregroundColor(viewModel.themeColor)
-                                }
-                                
-                                VStack(alignment: .leading) {
-                                    Text("자유 달리기")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("달리면서 새 코스 만들기")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(16)
                         }
-                        
-                        Divider()
-                            .padding(.horizontal)
-                        
-                        // 코스 따라 달리기 옵션
-                        Button(action: {
-                            // 현재 위치 주변 코스 목록 가져오기
-                            if let userLocation = locationService.lastLocation?.coordinate {
-                                let nearbyCourses = viewModel.findNearbyCoursesFor(coordinate: userLocation, radius: 5000)
-                                
-                                withAnimation(.spring()) {
-                                    viewModel.isStartRunExpanded = false
-                                    
-                                    // 주변 코스가 있으면 첫 번째 코스 미리보기
-                                    if let firstCourse = nearbyCourses.first {
-                                        selectedCourse = firstCourse
-                                        showRoutePreview = true
-                                    } else {
-                                        // 주변 코스가 없을 경우 알림
-                                        print("주변에 저장된 코스가 없습니다.")
-                                    }
-                                }
-                            }
-                        }) {
-                            // 코스 따라 달리기 UI
-                            HStack {
-                                ZStack {
-                                    Circle()
-                                        .fill(viewModel.exploreCategories[2].color.opacity(0.1))
-                                        .frame(width: 48, height: 48)
-                                    Image(systemName: "map.fill")
-                                        .foregroundColor(viewModel.exploreCategories[2].color)
-                                }
-                                
-                                VStack(alignment: .leading) {
-                                    Text("코스 따라 달리기")
-                                        .font(.system(size: 16, weight: .medium))
-                                    Text("기존 코스 선택하기")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.gray)
-                                }
-                                
-                                Spacer()
-                            }
-                            .padding(16)
-                        }
+                        .background(Color.rtCard)
+                        .cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
                     }
-                    .background(Color.white)
-                    .cornerRadius(28)
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }
             }
         }
     }
     
-    // MARK: - 통계 바 섹션
-    var statisticsBar: some View {
-        HStack(spacing: 0) {
-            // 총 거리
-            VStack(alignment: .center, spacing: 4) {
-                Text("총 거리")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-                
-                Text(Formatters.formatDistance(viewModel.totalDistance))
-                    .font(.system(size: 16, weight: .bold))
-            }
-            .frame(maxWidth: .infinity)
-            
-            // 구분선
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 1, height: 30)
-            
-            // 주간 거리
-            VStack(alignment: .center, spacing: 4) {
-                Text("이번 주")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-                
-                Text(Formatters.formatDistance(viewModel.weeklyDistance))
-                    .font(.system(size: 16, weight: .bold))
-            }
-            .frame(maxWidth: .infinity)
-            
-            // 구분선
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 1, height: 30)
-            
-            // 오늘 거리
-            VStack(alignment: .center, spacing: 4) {
-                Text("오늘")
-                    .font(.system(size: 12))
-                    .foregroundColor(.gray)
-                
-                Text(Formatters.formatDistance(viewModel.todayDistance))
-                    .font(.system(size: 16, weight: .bold))
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.vertical, 12)
-        .background(Color.white)
-        .cornerRadius(28)
-        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-    
-    // MARK: - 최근 런 섹션
-    var recentRunsSection: some View {
-        VStack(spacing: 16) {
-            // 섹션 헤더
-            HStack {
-                Text("최근 활동")
-                    .font(.system(size: 18, weight: .bold))
-                
-                Spacer()
-                
-                Button(action: {
-                    // 모든 활동 보기
-                    withAnimation {
-                        viewModel.selectedTab = 2 // 활동 탭으로 이동
-                    }
-                }) {
-                    Text("더보기")
-                        .font(.system(size: 14))
-                        .foregroundColor(viewModel.themeColor)
-                }
-            }
-            .padding(.horizontal, 16)
-            
-            // 최근 러닝 목록
-            if viewModel.recentRuns.isEmpty {
-                // 데이터가 없는 경우
-                VStack(spacing: 12) {
-                    Image(systemName: "figure.run")
-                        .font(.system(size: 32))
-                        .foregroundColor(.gray.opacity(0.5))
-                    
-                    Text("아직 러닝 기록이 없습니다")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                    
-                    Text("첫 러닝을 시작해보세요!")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray.opacity(0.7))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 30)
-                .background(Color.white)
-                .cornerRadius(28)
-                .padding(.horizontal, 16)
-            } else {
-                // 데이터가 있는 경우 최근 러닝 표시
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(viewModel.recentRuns) { run in
-                            runCard(run)
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 4)
-                }
-            }
-        }
-    }
-    
-    // 달리기 기록 카드
-    func runCard(_ run: Run) -> some View {
-        Button(action: {
-            // 코스 ID가 있는 경우 상세 화면으로 이동
-            if !run.courseId.isEmpty, let course = viewModel.getCourse(by: run.courseId) {
-                viewModel.selectedCourseId = run.courseId
-                viewModel.showCourseDetailView = true
-            }
-        }) {
-            VStack {
-                HStack(spacing: 16) {
-                    // 러닝 아이콘
-                    ZStack {
-                        Circle()
-                            .fill(viewModel.themeColor.opacity(0.1))
-                            .frame(width: 60, height: 60)
-                        
-                        Image(systemName: "figure.run")
-                            .font(.system(size: 24))
-                            .foregroundColor(viewModel.themeColor)
-                    }
-                    
-                    // 러닝 정보
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(viewModel.getCourseTitle(courseId: run.courseId))
-                            .font(.system(size: 16, weight: .medium))
-                        
-                        // 날짜
-                        Text(Formatters.formatDate(run.runAt))
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray)
-                        
-                        // 통계 정보
-                        HStack(spacing: 12) {
-                            // 거리
-                            HStack(spacing: 4) {
-                                Image(systemName: "ruler")
-                                    .font(.system(size: 10))
-                                Text(Formatters.formatDistance(run.trail.count > 0 ? 150 * Double(run.trail.count) : 0))
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(.gray)
-                            
-                            // 시간
-                            HStack(spacing: 4) {
-                                Image(systemName: "clock")
-                                    .font(.system(size: 10))
-                                Text(Formatters.formatDuration(run.duration))
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(.gray)
-                            
-                            // 페이스
-                            HStack(spacing: 4) {
-                                Image(systemName: "speedometer")
-                                    .font(.system(size: 10))
-                                Text(run.paceStr)
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(viewModel.themeColor)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    // 화살표 아이콘
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                }
-                .padding(16)
-            }
-            .background(Color.white)
-            .cornerRadius(28)
-            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    // MARK: - 카테고리 섹션
-    var categoriesSection: some View {
-        VStack(spacing: 16) {
-            // 섹션 헤더
-            HStack {
-                Text("살펴보기")
-                    .font(.system(size: 18, weight: .bold))
-                
-                Spacer()
-                
-                Button(action: {
-                    // 더 많은 카테고리 보기
-                    withAnimation {
-                        viewModel.selectedTab = 1 // 탐색 탭으로 이동
-                    }
-                }) {
-                    Text("더보기")
-                        .font(.system(size: 14))
-                        .foregroundColor(viewModel.themeColor)
-                }
-            }
-            .padding(.horizontal, 16)
-            
-            // 카테고리 목록
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(viewModel.exploreCategories) { category in
-                        categoryCard(category)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 4)
-            }
-        }
-    }
-    
-    // 카테고리 카드
-    func categoryCard(_ category: ExploreCategory) -> some View {
-        Button(action: {
-            // 카테고리 탭
-            withAnimation {
-                viewModel.selectedTab = 1 // 탐색 탭으로 이동
-            }
-        }) {
-            HStack(spacing: 12) {
+    // 러닝 시작 옵션 컴포넌트
+    struct StartRunOption: View {
+        var icon: String
+        var title: String
+        var subtitle: String
+        var color: Color
+        
+        var body: some View {
+            HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(category.color.opacity(0.1))
-                        .frame(width: 48, height: 48)
+                        .fill(color.opacity(0.12))
+                        .frame(width: 44, height: 44)
                     
-                    Image(systemName: category.icon)
+                    Image(systemName: icon)
                         .font(.system(size: 18))
-                        .foregroundColor(category.color)
+                        .foregroundColor(color)
                 }
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(category.title)
-                        .font(.system(size: 16, weight: .medium))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .rtBodyLarge()
                     
-                    Text("새로운 경로 살펴보기")
-                        .font(.system(size: 12))
+                    Text(subtitle)
+                        .rtBodySmall()
                         .foregroundColor(.gray)
                 }
                 
@@ -846,148 +448,719 @@ struct HomeTabView: View {
                     .font(.system(size: 14))
                     .foregroundColor(.gray)
             }
-            .padding(16)
-            .frame(width: 280)
-            .background(Color.white)
-            .cornerRadius(28)
-            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .padding(.vertical, 16)
+            .padding(.horizontal, 16)
         }
-        .buttonStyle(PlainButtonStyle())
+    }
+    
+    // MARK: - 러닝 세션 카드
+    struct RunningSessionCard: View {
+        var elapsedTime: TimeInterval
+        var distance: Double
+        var pace: Double
+        var isPaused: Bool
+        var onPause: () -> Void
+        var onResume: () -> Void
+        var onStop: () -> Void
+        
+        var body: some View {
+            VStack(spacing: 0) {
+                // 통계 정보 영역
+                HStack(spacing: 0) {
+                    // 시간
+                    StatisticItem(
+                        title: "시간",
+                        value: formatTime(elapsedTime),
+                        foregroundColor: .white
+                    )
+                    
+                    // 구분선
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 1, height: 40)
+                    
+                    // 거리
+                    StatisticItem(
+                        title: "거리",
+                        value: formatDistance(distance),
+                        foregroundColor: .white
+                    )
+                    
+                    // 구분선
+                    Rectangle()
+                        .fill(Color.white.opacity(0.2))
+                        .frame(width: 1, height: 40)
+                    
+                    // 페이스
+                    StatisticItem(
+                        title: "페이스",
+                        value: formatPace(pace),
+                        foregroundColor: .white
+                    )
+                }
+                .padding(.vertical, 20)
+                .padding(.horizontal, 16)
+                .background(
+                    isPaused ?
+                        LinearGradient.rtWarningGradient :
+                        LinearGradient.rtPrimaryGradient
+                )
+                .cornerRadius(20, corners: [.topLeft, .topRight])
+                
+                // 버튼 영역
+                HStack(spacing: 16) {
+                    // 일시정지/재개 버튼
+                    Button(action: {
+                        if isPaused {
+                            onResume()
+                        } else {
+                            onPause()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: isPaused ? "play.fill" : "pause.fill")
+                                .font(.system(size: 16))
+                            
+                            Text(isPaused ? "계속하기" : "일시정지")
+                                .rtBodySmall()
+                                .fontWeight(.medium)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 20)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.white.opacity(0.15))
+                        )
+                        .foregroundColor(.white)
+                    }
+                    
+                    // 종료 버튼
+                    Button(action: onStop) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "stop.fill")
+                                .font(.system(size: 16))
+                            
+                            Text("종료")
+                                .rtBodySmall()
+                                .fontWeight(.medium)
+                        }
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 20)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.rtError.opacity(0.9))
+                        )
+                        .foregroundColor(.white)
+                    }
+                }
+                .padding(12)
+                .background(Color.black.opacity(0.2))
+                .cornerRadius(20, corners: [.bottomLeft, .bottomRight])
+            }
+            .shadow(color: Color.black.opacity(0.2), radius: 15, x: 0, y: 5)
+        }
+        
+        private struct StatisticItem: View {
+            var title: String
+            var value: String
+            var foregroundColor: Color
+            
+            var body: some View {
+                VStack(spacing: 4) {
+                    Text(title)
+                        .rtCaption()
+                        .foregroundColor(foregroundColor.opacity(0.8))
+                    
+                    Text(value)
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(foregroundColor)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        
+        // 포맷팅 함수들
+        private func formatTime(_ seconds: TimeInterval) -> String {
+            let hours = Int(seconds) / 3600
+            let minutes = (Int(seconds) % 3600) / 60
+            let secs = Int(seconds) % 60
+            
+            if hours > 0 {
+                return String(format: "%d:%02d:%02d", hours, minutes, secs)
+            } else {
+                return String(format: "%02d:%02d", minutes, secs)
+            }
+        }
+        
+        private func formatDistance(_ meters: Double) -> String {
+            if meters < 1000 {
+                return String(format: "%.0fm", meters)
+            } else {
+                return String(format: "%.2fkm", meters/1000)
+            }
+        }
+        
+        private func formatPace(_ pace: Double) -> String {
+            if pace.isNaN || pace.isInfinite || pace <= 0 {
+                return "--'--\""
+            }
+            
+            let minutes = Int(pace) / 60
+            let seconds = Int(pace) % 60
+            return String(format: "%d'%02d\"", minutes, seconds)
+        }
+    }
+    
+    // MARK: - 통계 바 섹션
+    var statisticsBar: some View {
+        HStack(spacing: 0) {
+            // 총 거리
+            StatItem(
+                title: "총 거리",
+                value: Formatters.formatDistance(viewModel.totalDistance),
+                icon: "figure.walk"
+            )
+            
+            // 구분선
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 1, height: 30)
+            
+            // 주간 거리
+            StatItem(
+                title: "주간 거리",
+                value: Formatters.formatDistance(viewModel.weeklyDistance),
+                icon: "calendar"
+            )
+            
+            // 구분선
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(width: 1, height: 30)
+            
+            // 오늘 거리
+            StatItem(
+                title: "오늘",
+                value: Formatters.formatDistance(viewModel.todayDistance),
+                icon: "clock"
+            )
+        }
+        .padding(.vertical, 12)
+        .background(Color.rtCard)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+    
+    // 통계 아이템 컴포넌트
+    struct StatItem: View {
+        var title: String
+        var value: String
+        var icon: String
+        
+        var body: some View {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(.rtPrimary)
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .rtCaption()
+                        .foregroundColor(.gray)
+                    
+                    Text(value)
+                        .rtBodyLarge()
+                        .fontWeight(.medium)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+    
+    // MARK: - 최근 런 섹션
+    var recentRunsSection: some View {
+        VStack(spacing: 16) {
+            // 섹션 헤더
+            HStack {
+                Text("최근 활동")
+                    .rtHeading3()
+                
+                Spacer()
+                
+                Button(action: {
+                    // 모든 활동 보기
+                    withAnimation {
+                        viewModel.selectedTab = 2 // 활동 탭으로 이동
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Text("더보기")
+                            .rtBodySmall()
+                            .foregroundColor(.rtPrimary)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.rtPrimary)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            
+            // 최근 러닝 목록
+            if viewModel.recentRuns.isEmpty {
+                // 데이터가 없는 경우
+                EmptyStateView(
+                    icon: "figure.run",
+                    title: "아직 러닝 기록이 없습니다",
+                    message: "첫 러닝을 시작해보세요!"
+                )
+                .padding(20)
+            } else {
+                // 데이터가 있는 경우 최근 러닝 표시
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(viewModel.recentRuns) { run in
+                            RecentRunCard(run: run) {
+                                // 코스 ID가 있는 경우 상세 화면으로 이동
+                                if !run.courseId.isEmpty, let course = viewModel.getCourse(by: run.courseId) {
+                                    viewModel.selectedCourseId = run.courseId
+                                    viewModel.showCourseDetailView = true
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                }
+            }
+        }
+    }
+    
+    // 최근 러닝 카드 컴포넌트
+    struct RecentRunCard: View {
+        var run: Run
+        var onTap: () -> Void
+        
+        var body: some View {
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    // 좌측 아이콘
+                    ZStack {
+                        Circle()
+                            .fill(Color.rtPrimary.opacity(0.1))
+                            .frame(width: 56, height: 56)
+                        
+                        Image(systemName: "figure.run")
+                            .font(.system(size: 22))
+                            .foregroundColor(.rtPrimary)
+                    }
+                    
+                    // 정보 영역
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(getDayAndDate(run.runAt))
+                            .rtBodyLarge()
+                            .fontWeight(.medium)
+                        
+                        // 통계 라인
+                        HStack(spacing: 14) {
+                            // 거리
+                            Label(
+                                Formatters.formatDistance(run.trail.count > 0 ? 150 * Double(run.trail.count) : 0),
+                                systemImage: "ruler"
+                            )
+                            .labelStyle(IconFirstLabelStyle())
+                            .rtBodySmall()
+                            .foregroundColor(.gray)
+                            
+                            // 시간
+                            Label(
+                                Formatters.formatDuration(run.duration),
+                                systemImage: "clock"
+                            )
+                            .labelStyle(IconFirstLabelStyle())
+                            .rtBodySmall()
+                            .foregroundColor(.gray)
+                            
+                            // 페이스
+                            Label(
+                                run.paceStr,
+                                systemImage: "speedometer"
+                            )
+                            .labelStyle(IconFirstLabelStyle())
+                            .rtBodySmall()
+                            .foregroundColor(.rtPrimary)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // 화살표
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .padding(16)
+                .background(Color.rtCard)
+                .cornerRadius(20)
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+                .frame(width: 280)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        
+        // 날짜 포맷팅
+        private func getDayAndDate(_ date: Date) -> String {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "M월 d일 (E)"
+            formatter.locale = Locale(identifier: "ko_KR")
+            return formatter.string(from: date)
+        }
+    }
+    
+    // MARK: - 카테고리 섹션
+    var categoriesSection: some View {
+        VStack(spacing: 16) {
+            // 섹션 헤더
+            HStack {
+                Text("살펴보기")
+                    .rtHeading3()
+                
+                Spacer()
+                
+                Button(action: {
+                    // 더 많은 카테고리 보기
+                    withAnimation {
+                        viewModel.selectedTab = 1 // 탐색 탭으로 이동
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Text("더보기")
+                            .rtBodySmall()
+                            .foregroundColor(.rtPrimary)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(.rtPrimary)
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            
+            // 카테고리 목록
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(viewModel.exploreCategories) { category in
+                        CategoryCard(category: category) {
+                            // 카테고리 탭
+                            withAnimation {
+                                viewModel.selectedTab = 1 // 탐색 탭으로 이동
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
+        }
+    }
+    
+    // 카테고리 카드 컴포넌트
+    struct CategoryCard: View {
+        var category: ExploreCategory
+        var onTap: () -> Void
+        
+        var body: some View {
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    // 아이콘
+                    ZStack {
+                        Circle()
+                            .fill(category.color.opacity(0.1))
+                            .frame(width: 48, height: 48)
+                        
+                        Image(systemName: category.icon)
+                            .font(.system(size: 18))
+                            .foregroundColor(category.color)
+                    }
+                    
+                    // 텍스트
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(category.title)
+                            .rtBodyLarge()
+                            .fontWeight(.medium)
+                        
+                        Text("새로운 경로 살펴보기")
+                            .rtBodySmall()
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
+                    
+                    // 화살표
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                }
+                .padding(16)
+                .background(Color.rtCard)
+                .cornerRadius(20)
+                .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
+                .frame(width: 260)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+    
+    // 빈 상태 표시 컴포넌트
+    struct EmptyStateView: View {
+        var icon: String
+        var title: String
+        var message: String
+        
+        var body: some View {
+            VStack(spacing: 12) {
+                Image(systemName: icon)
+                    .font(.system(size: 40))
+                    .foregroundColor(.gray.opacity(0.5))
+                
+                Text(title)
+                    .rtBodyLarge()
+                    .foregroundColor(.gray)
+                
+                Text(message)
+                    .rtBodySmall()
+                    .foregroundColor(.gray.opacity(0.7))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 30)
+            .background(Color.rtCard)
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
+            .padding(.horizontal, 16)
+        }
+    }
+    
+    // MARK: - iOS 16 이하를 위한 강화된 지도 뷰
+    struct EnhancedMapView: UIViewRepresentable {
+        @Binding var region: MKCoordinateRegion
+        var showsUserLocation: Bool
+        var recordedCoordinates: [Coordinate]
+        var previewCourse: Course?
+        var nearbyCourses: [Course]
+        var isPaused: Bool
+        
+        func makeUIView(context: Context) -> MKMapView {
+            let mapView = MKMapView()
+            mapView.delegate = context.coordinator
+            mapView.showsUserLocation = showsUserLocation
+            mapView.setRegion(region, animated: true)
+            
+            // 지도 스타일 (표준)
+            mapView.mapType = .standard
+            
+            // 필수 컨트롤 표시
+            mapView.showsCompass = true
+            mapView.showsScale = true
+            
+            return mapView
+        }
+        
+        func updateUIView(_ uiView: MKMapView, context: Context) {
+            uiView.setRegion(region, animated: true)
+            
+            // 기존 오버레이 제거
+            uiView.removeOverlays(uiView.overlays)
+            
+            // 기존 어노테이션 제거 (사용자 위치 제외)
+            let annotations = uiView.annotations.filter { !($0 is MKUserLocation) }
+            uiView.removeAnnotations(annotations)
+            
+            // 현재 기록 중인 러닝 코스 표시
+            if !recordedCoordinates.isEmpty {
+                let coordinates = recordedCoordinates.map {
+                    CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+                }
+                let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+                polyline.title = "recording"
+                uiView.addOverlay(polyline)
+            }
+            
+            // 미리보기 코스 표시
+            if let course = previewCourse {
+                let coordinates = course.coordinates.map {
+                    CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+                }
+                
+                // 시작점과 종료점 표시
+                if let first = coordinates.first {
+                    let startPin = CourseAnnotation(
+                        coordinate: first,
+                        title: "시작",
+                        type: .start
+                    )
+                    uiView.addAnnotation(startPin)
+                }
+                
+                if let last = coordinates.last, coordinates.count > 1 {
+                    let endPin = CourseAnnotation(
+                        coordinate: last,
+                        title: "종료",
+                        type: .end
+                    )
+                    uiView.addAnnotation(endPin)
+                }
+                
+                // 코스 경로 표시
+                let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+                polyline.title = "preview"
+                uiView.addOverlay(polyline)
+            }
+            
+            // 주변 코스 표시
+            for course in nearbyCourses {
+                let coordinates = course.coordinates.map {
+                    CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+                }
+                
+                // 시작점 표시
+                if let first = coordinates.first {
+                    let pin = CourseAnnotation(
+                        coordinate: first,
+                        title: course.title,
+                        type: .nearby
+                    )
+                    uiView.addAnnotation(pin)
+                }
+                
+                // 코스 경로 표시
+                let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+                polyline.title = "nearby"
+                uiView.addOverlay(polyline)
+            }
+        }
+        
+        func makeCoordinator() -> Coordinator {
+            Coordinator(self)
+        }
+        
+        // 강화된 코스 어노테이션
+        class CourseAnnotation: NSObject, MKAnnotation {
+            enum AnnotationType {
+                case start, end, nearby
+            }
+            
+            let coordinate: CLLocationCoordinate2D
+            let title: String?
+            let type: AnnotationType
+            
+            init(coordinate: CLLocationCoordinate2D, title: String, type: AnnotationType) {
+                self.coordinate = coordinate
+                self.title = title
+                self.type = type
+            }
+        }
+        
+        class Coordinator: NSObject, MKMapViewDelegate {
+            var parent: EnhancedMapView
+            
+            init(_ parent: EnhancedMapView) {
+                self.parent = parent
+            }
+            
+            // 커스텀 어노테이션 뷰
+            func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+                if annotation is MKUserLocation {
+                    return nil
+                }
+                
+                if let courseAnnotation = annotation as? CourseAnnotation {
+                    let identifier = "CourseAnnotation"
+                    var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                    
+                    if annotationView == nil {
+                        annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                        annotationView?.canShowCallout = true
+                    }
+                    
+                    annotationView?.annotation = annotation
+                    
+                    // 어노테이션 타입에 따른 스타일 변경
+                    switch courseAnnotation.type {
+                    case .start:
+                        annotationView?.markerTintColor = UIColor(Color.rtSuccess)
+                        annotationView?.glyphImage = UIImage(systemName: "flag.fill")
+                    case .end:
+                        annotationView?.markerTintColor = UIColor(Color.rtError)
+                        annotationView?.glyphImage = UIImage(systemName: "flag.checkered")
+                    case .nearby:
+                        annotationView?.markerTintColor = UIColor(Color.rtPrimary)
+                        annotationView?.glyphImage = UIImage(systemName: "mappin")
+                    }
+                    
+                    return annotationView
+                }
+                
+                return nil
+            }
+            
+            // 커스텀 오버레이 렌더러
+            func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+                if let polyline = overlay as? MKPolyline {
+                    let renderer = MKPolylineRenderer(polyline: polyline)
+                    
+                    switch polyline.title ?? "" {
+                    case "recording":
+                        // 현재 기록 중인 러닝
+                        renderer.strokeColor = parent.isPaused ?
+                            UIColor(Color.rtWarning) :
+                            UIColor(Color.rtPrimary)
+                        renderer.lineWidth = 5
+                    case "preview":
+                        // 미리보기 코스
+                        renderer.strokeColor = UIColor(Color.rtSecondary.opacity(0.8))
+                        renderer.lineWidth = 5
+                    case "nearby":
+                        // 주변 코스
+                        renderer.strokeColor = UIColor(Color.rtPrimary.opacity(0.6))
+                        renderer.lineWidth = 3
+                    default:
+                        renderer.strokeColor = UIColor(Color.rtPrimary)
+                        renderer.lineWidth = 4
+                    }
+                    
+                    return renderer
+                }
+                
+                return MKOverlayRenderer(overlay: overlay)
+            }
+        }
     }
     
     // MARK: - 유틸리티 함수
-    private func formatDuration(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600
-        let minutes = (Int(seconds) % 3600) / 60
-        let secs = Int(seconds) % 60
-        
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, secs)
-        } else {
-            return String(format: "%02d:%02d", minutes, secs)
-        }
-    }
-}
-
-// MARK: - iOS 16 이하를 위한 기본 지도 뷰
-struct BasicMapView: UIViewRepresentable {
-    @Binding var region: MKCoordinateRegion
-    var showsUserLocation: Bool
-    var recordedCoordinates: [Coordinate]
-    var previewCourse: Course?
-    var nearbyCourses: [Course]
-    var isPaused: Bool
-    var themeColor: UIColor
     
-    func makeUIView(context: Context) -> MKMapView {
-        let mapView = MKMapView()
-        mapView.delegate = context.coordinator
-        mapView.showsUserLocation = showsUserLocation
-        mapView.setRegion(region, animated: true)
-        return mapView
+    // 현재 페이스 계산
+    private func calculateCurrentPace() -> Double {
+        if viewModel.recordingDistance < 100 {  // 최소 100m 이상 달려야 페이스 계산
+            return 0
+        }
+        
+        // 페이스 = 시간(초) / 거리(km)
+        let distanceInKm = viewModel.recordingDistance / 1000
+        return viewModel.recordingElapsedTime / distanceInKm
     }
     
-    func updateUIView(_ uiView: MKMapView, context: Context) {
-        uiView.setRegion(region, animated: true)
-        
-        // 기존 오버레이 제거
-        uiView.removeOverlays(uiView.overlays)
-        
-        // 기존 어노테이션 제거 (사용자 위치 제외)
-        let annotations = uiView.annotations.filter { !($0 is MKUserLocation) }
-        uiView.removeAnnotations(annotations)
-        
-        // 현재 기록 중인 러닝 코스 표시
-        if !recordedCoordinates.isEmpty {
-            let coordinates = recordedCoordinates.map {
-                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+    // 라벨 스타일
+    struct IconFirstLabelStyle: LabelStyle {
+        func makeBody(configuration: Configuration) -> some View {
+            HStack(spacing: 4) {
+                configuration.icon
+                    .font(.system(size: 10))
+                configuration.title
             }
-            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-            uiView.addOverlay(polyline)
-        }
-        
-        // 미리보기 코스 표시
-        if let course = previewCourse {
-            let coordinates = course.coordinates.map {
-                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
-            }
-            
-            // 시작점과 종료점 표시
-            if let first = coordinates.first {
-                let startPin = MKPointAnnotation()
-                startPin.coordinate = first
-                startPin.title = "시작"
-                uiView.addAnnotation(startPin)
-            }
-            
-            if let last = coordinates.last, coordinates.count > 1 {
-                let endPin = MKPointAnnotation()
-                endPin.coordinate = last
-                endPin.title = "종료"
-                uiView.addAnnotation(endPin)
-            }
-            
-            // 코스 경로 표시
-            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-            polyline.title = "preview"
-            uiView.addOverlay(polyline)
-        }
-        
-        // 주변 코스 표시
-        for course in nearbyCourses {
-            let coordinates = course.coordinates.map {
-                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
-            }
-            
-            // 시작점 표시
-            if let first = coordinates.first {
-                let pin = MKPointAnnotation()
-                pin.coordinate = first
-                pin.title = course.title
-                uiView.addAnnotation(pin)
-            }
-            
-            // 코스 경로 표시
-            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-            polyline.title = "nearby"
-            uiView.addOverlay(polyline)
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, MKMapViewDelegate {
-        var parent: BasicMapView
-        
-        init(_ parent: BasicMapView) {
-            self.parent = parent
-        }
-        
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-            if let polyline = overlay as? MKPolyline {
-                let renderer = MKPolylineRenderer(polyline: polyline)
-                
-                if polyline.title == "preview" {
-                    // 미리보기 코스
-                    renderer.strokeColor = UIColor.blue.withAlphaComponent(0.8)
-                    renderer.lineWidth = 5
-                    renderer.lineDashPattern = [8, 4]
-                } else if polyline.title == "nearby" {
-                    // 주변 코스
-                    renderer.strokeColor = parent.themeColor.withAlphaComponent(0.6)
-                    renderer.lineWidth = 3
-                } else {
-                    // 현재 기록 중인 러닝
-                    renderer.strokeColor = parent.isPaused ? .orange : parent.themeColor
-                    renderer.lineWidth = 4
-                }
-                
-                return renderer
-            }
-            
-            return MKOverlayRenderer(overlay: overlay)
         }
     }
 }
@@ -1019,68 +1192,101 @@ struct RoutePreviewView: View {
     var body: some View {
         VStack(spacing: 0) {
             // 상단 헤더
-            HStack {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 18, weight: .medium))
-                        .padding(8)
-                }
+            ZStack {
+                LinearGradient.rtPrimaryGradient
+                    .ignoresSafeArea()
                 
-                Spacer()
-                
-                Text(course.title)
-                    .font(.system(size: 18, weight: .bold))
-                
-                Spacer()
-                
-                Button(action: {
-                    // 코스 세부 정보로 이동
-                    viewModel.selectedCourseId = course.id
-                    viewModel.showCourseDetailView = true
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 18, weight: .medium))
-                        .padding(8)
-                }
-            }
-            .padding(.horizontal)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-            
-            // 코스 정보 요약
-            HStack(spacing: 24) {
-                VStack(spacing: 4) {
-                    Text("거리")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                    Text(Formatters.formatDistance(course.distance))
-                        .font(.system(size: 16, weight: .bold))
-                }
-                
-                VStack(spacing: 4) {
-                    Text("예상 시간")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
+                HStack {
+                    // 닫기 버튼
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                     
-                    // 예상 시간 계산 (사용자 평균 페이스 기반)
-                    let userAveragePace = getUserAveragePace(viewModel: viewModel)
-                    let estimatedTime = course.distance > 0 ? Int(course.distance / 1000 * userAveragePace) : 0
-                    Text(Formatters.formatDuration(estimatedTime))
-                        .font(.system(size: 16, weight: .bold))
+                    Spacer()
+                    
+                    Text("코스 미리보기")
+                        .rtBodyLarge()
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    // 상세 정보 버튼
+                    Button(action: {
+                        // 코스 세부 정보로 이동
+                        viewModel.selectedCourseId = course.id
+                        viewModel.showCourseDetailView = true
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(10)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                 }
-                
-                VStack(spacing: 4) {
-                    Text("생성일")
-                        .font(.system(size: 12))
-                        .foregroundColor(.gray)
-                    Text(Formatters.formatDate(course.createdAt))
-                        .font(.system(size: 16, weight: .bold))
-                }
+                .padding(.horizontal, 16)
             }
-            .padding(.vertical, 12)
+            .frame(height: 60)
+            
+            // 코스 제목 및 정보
+            VStack(spacing: 8) {
+                Text(course.title)
+                    .rtHeading3()
+                    .foregroundColor(.primary)
+                
+                // 코스 통계
+                HStack(spacing: 24) {
+                    // 거리
+                    VStack(spacing: 4) {
+                        Text("거리")
+                            .rtCaption()
+                            .foregroundColor(.gray)
+                        
+                        Text(Formatters.formatDistance(course.distance))
+                            .rtBodyLarge()
+                            .fontWeight(.medium)
+                    }
+                    
+                    // 예상 시간
+                    VStack(spacing: 4) {
+                        Text("예상 시간")
+                            .rtCaption()
+                            .foregroundColor(.gray)
+                        
+                        let userAveragePace = viewModel.getUserAveragePace()
+                        let estimatedTime = course.distance > 0 ? Int(course.distance / 1000 * userAveragePace) : 0
+                        
+                        Text(Formatters.formatDuration(estimatedTime))
+                            .rtBodyLarge()
+                            .fontWeight(.medium)
+                    }
+                    
+                    // 생성일
+                    VStack(spacing: 4) {
+                        Text("생성일")
+                            .rtCaption()
+                            .foregroundColor(.gray)
+                        
+                        Text(Formatters.formatDate(course.createdAt))
+                            .rtBodyLarge()
+                            .fontWeight(.medium)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 16)
+            }
+            .padding(.top, 16)
+            .background(Color.rtCard)
             
             // 코스 지도
             #if swift(>=5.9) // iOS 17 이상
@@ -1093,8 +1299,11 @@ struct RoutePreviewView: View {
                     if let firstCoord = course.coordinates.first {
                         Annotation("시작", coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng)) {
                             Image(systemName: "flag.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(.green)
+                                .font(.system(size: 20))
+                                .foregroundColor(.rtSuccess)
+                                .padding(8)
+                                .background(Circle().fill(Color.white))
+                                .shadow(radius: 2)
                         }
                     }
                     
@@ -1102,8 +1311,11 @@ struct RoutePreviewView: View {
                     if let lastCoord = course.coordinates.last {
                         Annotation("종료", coordinate: CLLocationCoordinate2D(latitude: lastCoord.lat, longitude: lastCoord.lng)) {
                             Image(systemName: "flag.checkered")
-                                .font(.system(size: 24))
-                                .foregroundColor(.red)
+                                .font(.system(size: 20))
+                                .foregroundColor(.rtError)
+                                .padding(8)
+                                .background(Circle().fill(Color.white))
+                                .shadow(radius: 2)
                         }
                     }
                     
@@ -1112,35 +1324,33 @@ struct RoutePreviewView: View {
                         CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
                     })
                     .stroke(
-                        Color.blue.opacity(0.8),
+                        Color.rtSecondary.opacity(0.8),
                         lineWidth: 5
                     )
                 })
                 .mapStyle(.standard(elevation: .realistic, emphasis: .muted))
-                .frame(height: UIScreen.main.bounds.height * 0.43) // 높이를 더 줄임
+                .frame(maxHeight: .infinity)
             } else {
-                BasicMapView(
+                EnhancedMapView(
                     region: $region,
                     showsUserLocation: true,
                     recordedCoordinates: [],
                     previewCourse: course,
                     nearbyCourses: [],
-                    isPaused: false,
-                    themeColor: UIColor(viewModel.themeColor)
+                    isPaused: false
                 )
-                .frame(height: UIScreen.main.bounds.height * 0.43) // 높이를 더 줄임
+                .frame(maxHeight: .infinity)
             }
             #else
-            BasicMapView(
+            EnhancedMapView(
                 region: $region,
                 showsUserLocation: true,
                 recordedCoordinates: [],
                 previewCourse: course,
                 nearbyCourses: [],
-                isPaused: false,
-                themeColor: UIColor(viewModel.themeColor)
+                isPaused: false
             )
-            .frame(height: UIScreen.main.bounds.height * 0.43) // 높이를 더 줄임
+            .frame(maxHeight: .infinity)
             #endif
             
             // 하단 버튼
@@ -1150,41 +1360,20 @@ struct RoutePreviewView: View {
             }) {
                 HStack {
                     Image(systemName: "figure.run")
+                        .font(.system(size: 18))
                     Text("이 코스로 달리기")
+                        .rtBodyLarge()
+                        .fontWeight(.semibold)
                 }
-                .font(.system(size: 16, weight: .medium))
                 .frame(maxWidth: .infinity)
-                .padding()
-                .background(viewModel.themeGradient)
+                .padding(.vertical, 16)
+                .background(LinearGradient.rtPrimaryGradient)
                 .foregroundColor(.white)
-                .cornerRadius(28)
-                .shadow(color: viewModel.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                .cornerRadius(24)
+                .shadow(color: Color.rtPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
+                .padding(16)
             }
-            .padding(16)
+            .background(Color.rtCard)
         }
-    }
-    
-    // 사용자의 평균 페이스 계산
-    func getUserAveragePace(viewModel: MapViewModel) -> Double {
-        // 기본 페이스 (초/km)
-        let defaultPace: Double = 6 * 60 // 6분/km
-        
-        // 최근 러닝 기록이 없으면 기본값 사용
-        guard !viewModel.recentRuns.isEmpty else {
-            return defaultPace
-        }
-        
-        // 유효한 페이스가 있는 러닝만 필터링
-        let validRuns = viewModel.recentRuns.filter { $0.pace > 0 }
-        
-        if validRuns.isEmpty {
-            return defaultPace
-        }
-        
-        // 최근 3개까지의 유효한 러닝 기록으로 평균 페이스 계산
-        let recentValidRuns = Array(validRuns.prefix(3))
-        let totalPace = recentValidRuns.reduce(0) { $0 + Double($1.pace) }
-        
-        return totalPace / Double(recentValidRuns.count)
     }
 }

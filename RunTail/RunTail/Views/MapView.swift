@@ -2,8 +2,7 @@
 //  MapView.swift
 //  RunTail
 //
-//  Created by 이수민 on 5/6/25.
-//  Updated with location service and viewModel connection
+//  Updated on 5/10/25.
 //
 
 import SwiftUI
@@ -28,39 +27,38 @@ struct MapView: View {
         NavigationView {
             ZStack {
                 // 선택된 탭에 따라 다른 콘텐츠 표시
-                if viewModel.selectedTab == 0 {
-                    // 홈 화면 (지도 화면)
-                    VStack(spacing: 0) {
-                        headerBar(title: "지도", showGPS: false)
+                Group {
+                    if viewModel.selectedTab == 0 {
+                        // 홈 화면 (지도 화면)
                         HomeTabView(viewModel: viewModel, locationService: locationService)
                             .environmentObject(viewModel)
                             .environmentObject(locationService)
                             .environment(\.checkBeforeStartRunning, checkBeforeStartRunning)
-                    }
-                } else if viewModel.selectedTab == 1 {
-                    // 탐색 화면
-                    VStack(spacing: 0) {
-                        headerBar(title: "탐색", showGPS: false)
+                    } else if viewModel.selectedTab == 1 {
+                        // 탐색 화면
                         ExploreTabView(viewModel: viewModel)
-                    }
-                } else if viewModel.selectedTab == 2 {
-                    // 활동 화면
-                    VStack(spacing: 0) {
-                        headerBar(title: "활동", showGPS: false)
+                    } else if viewModel.selectedTab == 2 {
+                        // 활동 화면
                         ActivityTabView(viewModel: viewModel)
-                    }
-                } else if viewModel.selectedTab == 3 {
-                    // 프로필 화면
-                    VStack(spacing: 0) {
-                        headerBar(title: "지도", showGPS: false)
+                    } else if viewModel.selectedTab == 3 {
+                        // 프로필 화면
                         ProfileTabView(viewModel: viewModel, colorScheme: colorScheme)
                     }
+                }
+                .ignoresSafeArea(edges: .top)
+                
+                // 상단 헤더 영역 (각 화면 위에 오버레이)
+                VStack {
+                    headerBar(for: viewModel.selectedTab)
+                        .frame(height: getSafeAreaTop() + 60)
+                    
+                    Spacer()
                 }
                 
                 // 하단 탭 바
                 VStack {
                     Spacer()
-                    customTabBar
+                    FloatingTabBar(selectedTab: $viewModel.selectedTab)
                 }
                 
                 // 로그인 화면으로 돌아가기 위한 NavigationLink
@@ -84,7 +82,6 @@ struct MapView: View {
                     label: { EmptyView() }
                 )
             }
-            .ignoresSafeArea(edges: [.top])
             .navigationBarHidden(true)
             // 로그아웃 확인 알림
             .alert(isPresented: $viewModel.showLogoutAlert) {
@@ -125,73 +122,209 @@ struct MapView: View {
         }
     }
     
-    // MARK: - 통합된 헤더바
-    func headerBar(title: String? = nil, subtitle: String? = nil, showTitle: Bool = true, showGPS: Bool = false) -> some View {
-        ZStack {
-            // 배경
-            viewModel.themeGradient
-                .ignoresSafeArea(edges: .top)
-            
-            VStack(spacing: 0) {
-                // RunTail 타이틀 영역
-                HStack {
-                    Text("RunTail")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    // GPS 상태 (지도 화면에만 표시)
-                    if showGPS {
-                        HStack(spacing: 4) {
-                            Text("GPS")
-                                .font(.system(size: 12, weight: .medium))
-                            
+    // MARK: - 헤더바 선택
+    func headerBar(for tab: Int) -> some View {
+        switch tab {
+        case 0:
+            return AnyView(
+                HomeHeader(locationService: locationService)
+            )
+        case 1:
+            return AnyView(
+                ExploreHeader()
+            )
+        case 2:
+            return AnyView(
+                ActivityHeader()
+            )
+        case 3:
+            return AnyView(
+                ProfileHeader(viewModel: viewModel)
+            )
+        default:
+            return AnyView(EmptyView())
+        }
+    }
+    
+    // MARK: - 홈 헤더
+    struct HomeHeader: View {
+        @ObservedObject var locationService: LocationService
+        
+        var body: some View {
+            ZStack {
+                LinearGradient.rtPrimaryGradient
+                    .ignoresSafeArea(edges: .top)
+                
+                VStack(spacing: 4) {
+                    HStack {
+                        Text("RunTail")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        // GPS 상태 표시
+                        HStack(spacing: 6) {
                             Circle()
                                 .fill(gpsSignalColor)
                                 .frame(width: 8, height: 8)
+                            
+                            Text(gpsStatusText)
+                                .rtBodySmall()
+                                .foregroundColor(.white.opacity(0.9))
                         }
-                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.2))
+                        .cornerRadius(16)
                     }
-                }
-                .padding(.top, getSafeAreaTop())
-                .padding(.horizontal, 16)
-                .padding(.bottom, showTitle ? 8 : 16)
-                
-                // 화면 제목 (필요한 경우에만)
-                if showTitle, let title = title {
-                    Text(title)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.bottom, subtitle != nil ? 4 : 12)
-                    
-                    // 부제목 (있는 경우에만)
-                    if let subtitle = subtitle {
-                        Text(subtitle)
-                            .font(.system(size: 14))
-                            .foregroundColor(.white.opacity(0.8))
-                            .padding(.bottom, 12)
-                    }
+                    .padding(.top, getSafeAreaTop())
+                    .padding(.horizontal, 16)
                 }
             }
         }
-        .frame(height: calculateHeaderHeight(showTitle: showTitle, hasSubtitle: subtitle != nil))
-    }
-    
-    // 헤더 높이 계산
-    func calculateHeaderHeight(showTitle: Bool, hasSubtitle: Bool) -> CGFloat {
-        let safeAreaTop = getSafeAreaTop()
-        let baseTitleHeight: CGFloat = 44 // RunTail 타이틀 영역 높이
         
-        if !showTitle {
-            return safeAreaTop + baseTitleHeight
+        private var gpsSignalColor: Color {
+            switch locationService.gpsSignalStrength {
+            case 0:
+                return .rtError
+            case 1:
+                return .rtWarning
+            case 2:
+                return .rtWarning
+            case 3, 4:
+                return .rtSuccess
+            default:
+                return .gray
+            }
         }
         
-        let titleHeight: CGFloat = 44 // 제목 영역 높이
-        let subtitleHeight: CGFloat = hasSubtitle ? 30 : 0 // 부제목 높이
+        private var gpsStatusText: String {
+            switch locationService.gpsSignalStrength {
+            case 0:
+                return "신호 없음"
+            case 1:
+                return "약함"
+            case 2:
+                return "양호"
+            case 3:
+                return "좋음"
+            case 4:
+                return "최상"
+            default:
+                return "확인 중"
+            }
+        }
+    }
+    
+    // MARK: - 탐색 헤더
+    struct ExploreHeader: View {
+        var body: some View {
+            ZStack {
+                LinearGradient.rtPrimaryGradient
+                    .ignoresSafeArea(edges: .top)
+                
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("RunTail")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, getSafeAreaTop())
+                    .padding(.horizontal, 16)
+                    
+                    HStack {
+                        Text("코스 탐색")
+                            .rtHeading2()
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                }
+            }
+        }
+    }
+    
+    // MARK: - 활동 헤더
+    struct ActivityHeader: View {
+        var body: some View {
+            ZStack {
+                LinearGradient.rtPrimaryGradient
+                    .ignoresSafeArea(edges: .top)
+                
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("RunTail")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.top, getSafeAreaTop())
+                    .padding(.horizontal, 16)
+                    
+                    HStack {
+                        Text("나의 활동")
+                            .rtHeading2()
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                }
+            }
+        }
+    }
+    
+    // MARK: - 프로필 헤더
+    struct ProfileHeader: View {
+        @ObservedObject var viewModel: MapViewModel
         
-        return safeAreaTop + baseTitleHeight + titleHeight + subtitleHeight
+        var body: some View {
+            ZStack {
+                LinearGradient.rtPrimaryGradient
+                    .ignoresSafeArea(edges: .top)
+                
+                VStack(spacing: 8) {
+                    HStack {
+                        Text("RunTail")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                        
+                        // 로그아웃 버튼
+                        Button(action: {
+                            viewModel.showLogoutAlert = true
+                        }) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 16))
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.white.opacity(0.2))
+                                .clipShape(Circle())
+                        }
+                    }
+                    .padding(.top, getSafeAreaTop())
+                    .padding(.horizontal, 16)
+                    
+                    HStack {
+                        Text("프로필")
+                            .rtHeading2()
+                            .foregroundColor(.white)
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                }
+            }
+        }
     }
     
     // 안전 영역 상단 높이를 가져오는 함수
@@ -204,22 +337,6 @@ struct MapView: View {
             .first
         
         return keyWindow?.safeAreaInsets.top ?? 0
-    }
-    
-    // GPS 신호 강도에 따른 색상
-    var gpsSignalColor: Color {
-        switch locationService.gpsSignalStrength {
-        case 0:
-            return .red
-        case 1:
-            return .orange
-        case 2:
-            return .yellow
-        case 3, 4:
-            return .green
-        default:
-            return .gray
-        }
     }
     
     // MARK: - 초기 설정
@@ -266,63 +383,61 @@ struct MapView: View {
         
         completion(true)
     }
+}
+
+// MARK: - 플로팅 탭 바
+struct FloatingTabBar: View {
+    @Binding var selectedTab: Int
     
-    // MARK: - 커스텀 탭 바
-    var customTabBar: some View {
+    private let tabs = [
+        (icon: "house.fill", title: "홈"),
+        (icon: "map.fill", title: "탐색"),
+        (icon: "chart.bar.fill", title: "활동"),
+        (icon: "person.fill", title: "프로필")
+    ]
+    
+    var body: some View {
         HStack(spacing: 0) {
-            ForEach(0..<4) { index in
+            ForEach(0..<tabs.count, id: \.self) { index in
                 Button(action: {
-                    withAnimation(.spring()) {
-                        viewModel.selectedTab = index
+                    withAnimation(.spring(response: 0.3)) {
+                        selectedTab = index
                     }
                 }) {
                     VStack(spacing: 4) {
-                        Image(systemName: viewModel.tabIcon(index))
-                            .font(.system(size: 22))
+                        Image(systemName: tabs[index].icon)
+                            .font(.system(size: 18))
                         
-                        Text(viewModel.tabTitle(index))
-                            .font(.system(size: 12))
+                        Text(tabs[index].title)
+                            .rtCaption()
                     }
+                    .foregroundColor(selectedTab == index ? .rtPrimary : .gray)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
+                    .padding(.vertical, 12)
                     .background(
-                        viewModel.selectedTab == index ?
-                            viewModel.themeColor.opacity(0.1) :
+                        selectedTab == index ?
+                            Color.rtPrimary.opacity(0.1) :
                             Color.clear
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 4)
-                    .foregroundColor(
-                        viewModel.selectedTab == index ?
-                            viewModel.themeColor :
-                            Color.gray
-                    )
+                    .cornerRadius(16)
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.top, 8)
-        .background(Color.white)
-        .cornerRadius(32, corners: [.topLeft, .topRight])
-        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: -4)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color.rtCard)
+        .cornerRadius(32)
+        .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: 0)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 }
 
-// MARK: - 환경 키 정의
+// MARK: - 환경 키 정의 (기존 코드와 동일)
 struct CheckBeforeStartRunningKey: EnvironmentKey {
     static let defaultValue: ((@escaping (Bool) -> Void) -> Void) = { _ in }
 }
 
 extension EnvironmentValues {
     var checkBeforeStartRunning: (@escaping (Bool) -> Void) -> Void {
-        get { self[CheckBeforeStartRunningKey.self] }
-        set { self[CheckBeforeStartRunningKey.self] = newValue }
-    }
-}
-
-struct MapView_Previews: PreviewProvider {
-    static var previews: some View {
-        MapView()
-    }
-}
+        get { self[CheckBe

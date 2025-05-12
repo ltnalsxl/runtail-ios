@@ -1,3 +1,10 @@
+//
+//  LoginView.swift
+//  RunTail
+//
+//  Updated on 5/10/25.
+//
+
 import SwiftUI
 import Firebase
 import FirebaseAuth
@@ -9,141 +16,120 @@ struct LoginView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                Color(UIColor.systemBackground)
+                // 배경 색상
+                Color.rtBackground
                     .ignoresSafeArea()
                 
-                VStack(spacing: 24) {
-                    // 로고 또는 앱 이름
-                    VStack(spacing: 8) {
-                        Text("RunTail")
-                            .font(.system(size: 45, weight: .bold))
-                            .foregroundStyle(viewModel.themeGradient) // 그라데이션 적용
-                        
-                        Text("달리기를 더 즐겁게")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.gray)
-                    }
-                    .padding(.top, 60)
-                    .padding(.bottom, 40)
+                // 상단 장식
+                VStack {
+                    Image("runningBackground") // 러닝 배경 이미지가 있으면 사용, 없으면 아래 그라데이션으로 대체
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(height: 240)
+                        .overlay(
+                            LinearGradient.rtPrimaryGradient
+                                .opacity(0.85)
+                        )
+                        .clipShape(RoundedShape(corners: [.bottomRight], radius: 80))
                     
-                    // 로그인 폼 - Material 스타일로 개선
+                    Spacer()
+                }
+                .ignoresSafeArea()
+                
+                // 메인 콘텐츠
+                VStack(spacing: 0) {
+                    // 로고 영역
+                    VStack(spacing: 8) {
+                        // 앱 아이콘 (러닝 아이콘)
+                        Image(systemName: "figure.run")
+                            .font(.system(size: 56))
+                            .foregroundStyle(LinearGradient.rtPrimaryGradient)
+                            .padding(24)
+                            .background(
+                                Circle()
+                                    .fill(Color.white)
+                                    .shadow(color: Color.rtPrimary.opacity(0.2), radius: 15, x: 0, y: 5)
+                            )
+                            .padding(.bottom, 16)
+                        
+                        // 앱 이름과 태그라인
+                        Text("RunTail")
+                            .font(.system(size: 36, weight: .bold))
+                            .foregroundStyle(LinearGradient.rtPrimaryGradient)
+                        
+                        Text("나만의 러닝 여정을 기록하세요")
+                            .rtBodyLarge()
+                            .foregroundColor(.gray)
+                            .padding(.bottom, 40)
+                    }
+                    .padding(.top, 100)
+                    
+                    // 로그인 폼
                     VStack(spacing: 24) {
-                        // 이메일 입력 필드
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("이메일")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.gray)
-                            
-                            HStack {
-                                Image(systemName: "envelope")
-                                    .foregroundColor(.gray)
-                                    .padding(.leading, 8)
-                                
-                                TextField("이메일 주소 입력", text: $viewModel.email)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
-                                    .autocapitalization(.none)
-                                    .keyboardType(.emailAddress)
-                                    .padding(.vertical, 14)
-                            }
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(28)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                        }
+                        // 이메일 필드
+                        TextFieldWithIcon(
+                            text: $viewModel.email,
+                            placeholder: "이메일 주소",
+                            icon: "envelope.fill",
+                            keyboardType: .emailAddress
+                        )
                         
-                        // 비밀번호 입력 필드
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("비밀번호")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.gray)
-                            
-                            HStack {
-                                Image(systemName: "lock")
-                                    .foregroundColor(.gray)
-                                    .padding(.leading, 8)
-                                
-                                SecureField("비밀번호 입력", text: $viewModel.password)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.primary)
-                                    .padding(.vertical, 14)
-                            }
-                            .background(Color(UIColor.secondarySystemBackground))
-                            .cornerRadius(28)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                        }
+                        // 비밀번호 필드
+                        SecureFieldWithIcon(
+                            text: $viewModel.password,
+                            placeholder: "비밀번호",
+                            icon: "lock.fill"
+                        )
                         
-                        // 로그인 버튼 - 그라데이션 적용 및 스타일 개선
+                        // 로그인 버튼
                         Button(action: viewModel.login) {
-                            ZStack {
-                                Capsule()
-                                    .fill(viewModel.themeGradient)
-                                    .frame(height: 56)
-                                    .shadow(color: viewModel.themeColor.opacity(0.3), radius: 8, x: 0, y: 4)
-                                
+                            HStack {
                                 if viewModel.isLoading {
                                     ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle())
-                                        .foregroundColor(.white)
-                                        .scaleEffect(1.2)
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(1.0)
                                 } else {
                                     Text("로그인")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.white)
+                                        .rtBodyLarge()
+                                        .fontWeight(.semibold)
                                 }
                             }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
                         }
-                        .padding(.top, 8)
+                        .buttonStyle(RTPrimaryButtonStyle())
                         .disabled(viewModel.isLoading)
+                        .padding(.top, 16)
                         
-                        // 로그인 메시지 - 스타일 개선
+                        // 로그인 메시지
                         if !viewModel.loginMessage.isEmpty {
-                            HStack {
-                                if viewModel.isLoginSuccessful {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
-                                } else {
-                                    Image(systemName: "exclamationmark.circle.fill")
-                                        .foregroundColor(.red)
-                                }
+                            HStack(spacing: 8) {
+                                Image(systemName: viewModel.isLoginSuccessful ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                                    .foregroundColor(viewModel.isLoginSuccessful ? .rtSuccess : .rtError)
                                 
                                 Text(viewModel.loginMessage)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(viewModel.isLoginSuccessful ? .green : .red)
+                                    .rtBody()
+                                    .foregroundColor(viewModel.isLoginSuccessful ? .rtSuccess : .rtError)
                             }
                             .padding(.top, 8)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .transition(.opacity)
                         }
                     }
                     .padding(24)
-                    .background(Color(UIColor.systemBackground))
-                    .cornerRadius(28)
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .background(Color.rtCard)
+                    .cornerRadius(24)
+                    .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
                     .padding(.horizontal, 24)
                     
                     Spacer()
                     
-                    // 앱 버전 정보
-                    HStack(spacing: 4) {
-                        Image(systemName: "info.circle")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray.opacity(0.7))
-                        
-                        Text("버전 1.0.0")
-                            .font(.system(size: 12))
-                            .foregroundColor(.gray.opacity(0.7))
-                    }
-                    .padding(.bottom, 16)
+                    // 앱 버전
+                    Text("버전 1.0.0")
+                        .rtBodySmall()
+                        .foregroundColor(.gray.opacity(0.7))
+                        .padding(.bottom, 20)
                 }
-                .animation(.spring(response: 0.3), value: viewModel.loginMessage)
                 
-                // NavigationLink를 사용하여 로그인 성공 시 MapView로 이동
+                // 메인 화면으로 이동
                 NavigationLink(
                     destination: MapView()
                         .navigationBarBackButtonHidden(true)
@@ -155,14 +141,79 @@ struct LoginView: View {
             .navigationBarHidden(true)
         }
         .onAppear {
-            // 앱이 시작될 때 이미 로그인되어 있는지 확인
             viewModel.checkExistingUser()
         }
     }
 }
 
-struct LoginView_Previews: PreviewProvider {
-    static var previews: some View {
-        LoginView()
+// MARK: - 커스텀 텍스트필드
+struct TextFieldWithIcon: View {
+    @Binding var text: String
+    var placeholder: String
+    var icon: String
+    var keyboardType: UIKeyboardType = .default
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color.rtPrimary)
+                .frame(width: 24)
+            
+            TextField(placeholder, text: $text)
+                .rtBodyLarge()
+                .keyboardType(keyboardType)
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .padding(.vertical, 14)
+        }
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                .background(Color.white)
+        )
+    }
+}
+
+struct SecureFieldWithIcon: View {
+    @Binding var text: String
+    var placeholder: String
+    var icon: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(Color.rtPrimary)
+                .frame(width: 24)
+            
+            SecureField(placeholder, text: $text)
+                .rtBodyLarge()
+                .autocapitalization(.none)
+                .disableAutocorrection(true)
+                .padding(.vertical, 14)
+        }
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                .background(Color.white)
+        )
+    }
+}
+
+// 커스텀 라운드 쉐이프 (하단 모서리만 둥글게)
+struct RoundedShape: Shape {
+    var corners: UIRectCorner
+    var radius: CGFloat
+    
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }
