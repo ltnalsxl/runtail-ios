@@ -14,14 +14,10 @@ import Combine
 
 // 안전 영역 상단 높이를 가져오는 함수 - 전역 함수로 변경
 func getSafeAreaTop() -> CGFloat {
-    let keyWindow = UIApplication.shared.connectedScenes
-        .filter { $0.activationState == .foregroundActive }
-        .compactMap { $0 as? UIWindowScene }
-        .first?.windows
-        .filter { $0.isKeyWindow }
-        .first
-    
-    return keyWindow?.safeAreaInsets.top ?? 0
+    // 일반적인 iPhone 모델의 상태 바 높이는 약 44~47px입니다.
+    // 노치가 있는 모델(iPhone X 이후)은 약 44px,
+    // 노치가 없는 모델은 약 20px
+    return 44
 }
 
 struct MapView: View {
@@ -37,8 +33,12 @@ struct MapView: View {
     
     var body: some View {
         NavigationView {
-            ZStack {
-                // 선택된 탭에 따라 다른 콘텐츠 표시
+            ZStack(alignment: .top) {
+                // 배경색
+                Color.rtBackground
+                    .ignoresSafeArea()
+                
+                // 탭 콘텐츠
                 Group {
                     if viewModel.selectedTab == 0 {
                         // 홈 화면 (지도 화면)
@@ -46,31 +46,33 @@ struct MapView: View {
                             .environmentObject(viewModel)
                             .environmentObject(locationService)
                             .environment(\.checkBeforeStartRunning, checkBeforeStartRunning)
+                            .padding(.top, 40) // 헤더 높이와 일치
                     } else if viewModel.selectedTab == 1 {
                         // 탐색 화면
                         ExploreTabView(viewModel: viewModel)
+                            .padding(.top, 40)
                     } else if viewModel.selectedTab == 2 {
                         // 활동 화면
                         ActivityTabView(viewModel: viewModel)
+                            .padding(.top, 40)
                     } else if viewModel.selectedTab == 3 {
                         // 프로필 화면
                         ProfileTabView(viewModel: viewModel, colorScheme: colorScheme)
+                            .padding(.top, 40)
                     }
                 }
-                .ignoresSafeArea(edges: .top)
                 
-                // 상단 헤더 영역 (각 화면 위에 오버레이)
-                VStack {
-                    headerBar(for: viewModel.selectedTab)
-                        .frame(height: getSafeAreaTop() + 60)
-                    
-                    Spacer()
-                }
+                // 상단 헤더 고정
+                headerBar(for: viewModel.selectedTab)
+                    .frame(height: 40) // 헤더 높이와 일치
+                    .offset(y: -getSafeAreaTop()) // offset을 사용하여 위로 이동
+
                 
                 // 하단 탭 바
                 VStack {
                     Spacer()
                     FloatingTabBar(selectedTab: $viewModel.selectedTab)
+                        .padding(.bottom, 8)
                 }
                 
                 // 로그인 화면으로 돌아가기 위한 NavigationLink
@@ -157,43 +159,40 @@ struct MapView: View {
             return AnyView(EmptyView())
         }
     }
-    
     // MARK: - 홈 헤더
     struct HomeHeader: View {
         @ObservedObject var locationService: LocationService
         
         var body: some View {
-            ZStack {
-                LinearGradient.rtPrimaryGradient
-                    .ignoresSafeArea(edges: .top)
-                
-                VStack(spacing: 4) {
+            VStack(spacing: 0) {
+                // 헤더 배경 및 콘텐츠
+                ZStack {
+                    LinearGradient.rtPrimaryGradient
+                        .ignoresSafeArea(edges: .top)
+                    
                     HStack {
                         Text("RunTail")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
                         
                         Spacer()
                         
                         // GPS 상태 표시
-                        HStack(spacing: 6) {
+                        HStack(spacing: 4) {
+                            Text("GPS")
+                                .foregroundColor(.white)
+                                .font(.system(size: 10))
+                            
                             Circle()
                                 .fill(gpsSignalColor)
-                                .frame(width: 8, height: 8)
-                            
-                            Text(gpsStatusText)
-                                .rtBodySmall()
-                                .foregroundColor(.white.opacity(0.9))
+                                .frame(width: 10, height: 10)
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.2))
-                        .cornerRadius(16)
                     }
-                    .padding(.top, getSafeAreaTop())
                     .padding(.horizontal, 16)
                 }
             }
+            .frame(height: 40)
+            .padding(.top, -getSafeAreaTop()) // 음수 패딩을 통해 위로 당김
         }
         
         private var gpsSignalColor: Color {
@@ -202,15 +201,13 @@ struct MapView: View {
                 return .rtError
             case 1:
                 return .rtWarning
-            case 2:
-                return .rtWarning
-            case 3, 4:
-                return .rtSuccess
+            case 2, 3, 4:
+                return .green
             default:
-                return .gray
+                return .yellow
             }
         }
-        
+    
         private var gpsStatusText: String {
             switch locationService.gpsSignalStrength {
             case 0:
@@ -236,7 +233,7 @@ struct MapView: View {
                 LinearGradient.rtPrimaryGradient
                     .ignoresSafeArea(edges: .top)
                 
-                VStack(spacing: 8) {
+                VStack(spacing: 0) {
                     HStack {
                         Text("RunTail")
                             .font(.system(size: 20, weight: .bold))
@@ -419,15 +416,15 @@ struct FloatingTabBar: View {
                             Color.rtPrimary.opacity(0.1) :
                             Color.clear
                     )
-                    .cornerRadius(16)
+                    .cornerRadius(12)
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color.rtCard)
-        .cornerRadius(32)
-        .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: 0)
+        .cornerRadius(24)
+        .shadow(color: Color.black.opacity(0.1), radius: 15, x: 0, y: 5)
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
     }
@@ -444,3 +441,4 @@ extension EnvironmentValues {
         set { self[CheckBeforeStartRunningKey.self] = newValue }
     }
 }
+

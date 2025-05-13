@@ -215,19 +215,19 @@ struct HomeTabView: View {
     @State private var selectedCourse: Course?
     @State private var showRoutePreview = false
     
-    // 통계 아이템 컴포넌트
+    // 통계 아이템 컴포넌트 수정
     struct StatItem: View {
         var title: String
         var value: String
         var icon: String
         
         var body: some View {
-            HStack(spacing: 10) {
+            VStack(spacing: 0) { // 간격을 0으로 설정
                 Image(systemName: icon)
                     .font(.system(size: 14))
                     .foregroundColor(.rtPrimary)
                 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .rtCaption()
                         .foregroundColor(.gray)
@@ -237,7 +237,8 @@ struct HomeTabView: View {
                         .fontWeight(.medium)
                 }
             }
-            .frame(maxWidth: CGFloat.infinity)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
         }
     }
     
@@ -369,6 +370,8 @@ struct HomeTabView: View {
                     MapScaleView()
                 }
                 .frame(height: UIScreen.main.bounds.height * 0.4)
+                .edgesIgnoringSafeArea(.horizontal) // 수평 가장자리 무시
+
             } else {
                 // iOS 16 이하용 맵 뷰
                 EnhancedMapView(
@@ -382,6 +385,8 @@ struct HomeTabView: View {
                     isPaused: viewModel.isPaused
                 )
                 .frame(height: UIScreen.main.bounds.height * 0.4)
+                .edgesIgnoringSafeArea(.horizontal) // 수평 가장자리 무시
+
             }
             #else
             // iOS 16 이하용 맵 뷰
@@ -396,6 +401,8 @@ struct HomeTabView: View {
                 isPaused: viewModel.isPaused
             )
             .frame(height: UIScreen.main.bounds.height * 0.4)
+            .edgesIgnoringSafeArea(.horizontal) // 수평 가장자리 무시
+
             #endif
             
             // 지도 컨트롤
@@ -433,7 +440,7 @@ struct HomeTabView: View {
             
             // 주간 거리
             StatItem(
-                title: "주간 거리",
+                title: "이번 주",
                 value: Formatters.formatDistance(viewModel.weeklyDistance),
                 icon: "calendar"
             )
@@ -1114,21 +1121,23 @@ struct HomeTabView: View {
         var message: String
         
         var body: some View {
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 Image(systemName: icon)
-                    .font(.system(size: 40))
+                    .font(.system(size: 48))
                     .foregroundColor(.gray.opacity(0.5))
                 
                 Text(title)
                     .rtBodyLarge()
+                    .fontWeight(.medium)
                     .foregroundColor(.gray)
                 
                 Text(message)
                     .rtBodySmall()
                     .foregroundColor(.gray.opacity(0.7))
+                    .multilineTextAlignment(.center)
             }
-            .frame(maxWidth: CGFloat.infinity)
-            .padding(.vertical, 30)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
             .background(Color.rtCard)
             .cornerRadius(20)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
