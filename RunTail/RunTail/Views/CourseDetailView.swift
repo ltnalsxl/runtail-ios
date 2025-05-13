@@ -1142,37 +1142,3 @@ struct CourseSummarySheet: View {
         return totalLoss
     }
 }
-
-// MARK: - 카드 뷰 스타일 (Utils/ThemeManager.swift에 정의하는 것이 좋음)
-struct RTCardView<Content: View>: View {
-    var content: Content
-    
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-    
-    var body: some View {
-        content
-            .padding(16)
-            .background(Color.rtCard)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
-    }
-}
-
-// MARK: - 모서리 라운딩 확장
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
-
-struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
-        return Path(path.cgPath)
-    }
-}

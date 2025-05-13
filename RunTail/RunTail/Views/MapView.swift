@@ -12,6 +12,18 @@ import FirebaseAuth
 import FirebaseFirestore
 import Combine
 
+// 안전 영역 상단 높이를 가져오는 함수 - 전역 함수로 변경
+func getSafeAreaTop() -> CGFloat {
+    let keyWindow = UIApplication.shared.connectedScenes
+        .filter { $0.activationState == .foregroundActive }
+        .compactMap { $0 as? UIWindowScene }
+        .first?.windows
+        .filter { $0.isKeyWindow }
+        .first
+    
+    return keyWindow?.safeAreaInsets.top ?? 0
+}
+
 struct MapView: View {
     // MARK: - 뷰모델
     @StateObject private var viewModel = MapViewModel()
@@ -327,18 +339,6 @@ struct MapView: View {
         }
     }
     
-    // 안전 영역 상단 높이를 가져오는 함수
-    func getSafeAreaTop() -> CGFloat {
-        let keyWindow = UIApplication.shared.connectedScenes
-            .filter { $0.activationState == .foregroundActive }
-            .compactMap { $0 as? UIWindowScene }
-            .first?.windows
-            .filter { $0.isKeyWindow }
-            .first
-        
-        return keyWindow?.safeAreaInsets.top ?? 0
-    }
-    
     // MARK: - 초기 설정
     private func setupLocationServiceAndViewModel() {
         // LocationService와 ViewModel 연결
@@ -440,4 +440,7 @@ struct CheckBeforeStartRunningKey: EnvironmentKey {
 
 extension EnvironmentValues {
     var checkBeforeStartRunning: (@escaping (Bool) -> Void) -> Void {
-        get { self[CheckBe
+        get { self[CheckBeforeStartRunningKey.self] }
+        set { self[CheckBeforeStartRunningKey.self] = newValue }
+    }
+}
