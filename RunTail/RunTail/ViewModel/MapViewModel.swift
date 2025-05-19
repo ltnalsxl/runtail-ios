@@ -449,67 +449,105 @@ class MapViewModel: ObservableObject {
     }
     
     // MARK: - 내 코스 데이터 로드
+    // MapViewModel.swift의 loadMyCourses 함수를 수정
     func loadMyCourses() {
         let db = Firestore.firestore()
-        db.collection("courses")
+        
+        // 공개된 모든 코스 + 내가 만든 비공개 코스 가져오기
+        let publicQuery = db.collection("courses")
+            .whereField("isPublic", isEqualTo: true)
+        
+        let myCoursesQuery = db.collection("courses")
             .whereField("createdBy", isEqualTo: userId)
-            .order(by: "createdAt", descending: true)
-            .limit(to: 10)
-            .getDocuments { [weak self] snapshot, error in
+        
+        // 먼저 공개 코스 가져오기
+        publicQuery.getDocuments { [weak self] snapshot, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("공개 코스 로드 오류: \(error)")
+                return
+            }
+            
+            var courses: [Course] = []
+            
+            if let publicDocuments = snapshot?.documents {
+                print("공개 코스 수: \(publicDocuments.count)")
+                
+                // 공개 코스 파싱
+                for document in publicDocuments {
+                    if let course = self.parseCourseDocument(document) {
+                        courses.append(course)
+                    }
+                }
+            }
+            
+            // 이어서 내 비공개 코스 가져오기
+            myCoursesQuery.getDocuments { [weak self] snapshot, error in
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("Error getting courses: \(error)")
+                    print("내 코스 로드 오류: \(error)")
                     return
                 }
                 
-                guard let documents = snapshot?.documents else {
-                    print("No courses found")
-                    return
-                }
-                
-                // 코스 데이터 파싱
-                var courses: [Course] = []
-                
-                for document in documents {
-                    let data = document.data()
+                if let myDocuments = snapshot?.documents {
+                    print("내 코스 수: \(myDocuments.count)")
                     
-                    // 좌표 배열 파싱
-                    var coordinates: [Coordinate] = []
-                    if let coordsData = data["coordinates"] as? [[String: Any]] {
-                        for point in coordsData {
-                            if let lat = point["lat"] as? Double,
-                               let lng = point["lng"] as? Double,
-                               let timestamp = point["timestamp"] as? TimeInterval {
-                                coordinates.append(Coordinate(lat: lat, lng: lng, timestamp: timestamp))
+                    // 내 코스 파싱하여 추가
+                    for document in myDocuments {
+                        if let course = self.parseCourseDocument(document) {
+                            // 중복 방지 (이미 공개 코스에 포함된 경우)
+                            if !courses.contains(where: { $0.id == course.id }) {
+                                courses.append(course)
                             }
                         }
                     }
-                    
-                    // 날짜 파싱
-                    let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
-                    
-                    // 코스 객체 생성
-                    let course = Course(
-                        id: document.documentID,
-                        title: data["title"] as? String ?? "무제 코스",
-                        distance: data["distance"] as? Double ?? 0,
-                        coordinates: coordinates,
-                        createdAt: timestamp,
-                        createdBy: data["createdBy"] as? String ?? "",
-                        isPublic: data["isPublic"] as? Bool ?? false
-                    )
-                    
-                    courses.append(course)
                 }
+                
+                // 최신순으로 정렬
+                courses.sort { $0.createdAt > $1.createdAt }
                 
                 // 상태 업데이트
                 DispatchQueue.main.async {
                     self.myCourses = courses
+                    print("최종 로드된 코스 수: \(courses.count)")
                 }
             }
+        }
     }
-    
+
+    // 코스 문서 파싱 헬퍼 함수
+    private func parseCourseDocument(_ document: QueryDocumentSnapshot) -> Course? {
+        let data = document.data()
+        
+        // 좌표 배열 파싱
+        guard let coordsData = data["coordinates"] as? [[String: Any]] else {
+            return nil
+        }
+        
+        // 날짜 파싱
+        let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+        
+        // 코스 객체 생성
+        let course = Course(
+            id: document.documentID,
+            title: data["title"] as? String ?? "무제 코스",
+            distance: data["distance"] as? Double ?? 0,
+            coordinates: coordsData.map { point in
+                Coordinate(
+                    lat: point["lat"] as? Double ?? 0.0,
+                    lng: point["lng"] as? Double ?? 0.0,
+                    timestamp: point["timestamp"] as? TimeInterval ?? Date().timeIntervalSince1970
+                )
+            },
+            createdAt: timestamp,
+            createdBy: data["createdBy"] as? String ?? "",
+            isPublic: data["isPublic"] as? Bool ?? false
+        )
+        
+        return course
+    }
     // MARK: - 유틸리티 함수
     
     /// 코스 객체 가져오기
