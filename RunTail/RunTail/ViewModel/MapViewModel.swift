@@ -225,7 +225,40 @@ class MapViewModel: ObservableObject {
         // 기본적으로 성공 콜백
         completion(true, nil)
     }
-    
+    // 새 함수 추가
+    // 클래스 내에 새 함수 추가
+    func incrementCourseRunCount(courseId: String) {
+        guard !courseId.isEmpty else { return }
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        let db = Firestore.firestore()
+        let courseRef = db.collection("courses").document(courseId)
+        
+        // 트랜잭션으로 안전하게 카운터 증가
+        db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let courseDocument: DocumentSnapshot
+            do {
+                try courseDocument = transaction.getDocument(courseRef)
+            } catch let fetchError as NSError {
+                errorPointer?.pointee = fetchError
+                return nil
+            }
+            
+            // 현재 실행 횟수 가져오기 (없으면 0)
+            let currentCount = courseDocument.data()?["runCount"] as? Int ?? 0
+            
+            // 실행 횟수 증가시키기
+            transaction.updateData(["runCount": currentCount + 1], forDocument: courseRef)
+            
+            return nil
+        }) { (object, error) in
+            if let error = error {
+                print("코스 실행 횟수 증가 오류: \(error)")
+            } else {
+                print("코스 실행 횟수 증가 성공")
+            }
+        }
+    }
     /// 코스 저장
     func saveRecordingAsCourse(title: String, isPublic: Bool = false, completion: @escaping (Bool, String?) -> Void) {
         guard !recordedCoordinates.isEmpty else {
@@ -242,7 +275,8 @@ class MapViewModel: ObservableObject {
             "distance": recordingDistance,
             "createdAt": FieldValue.serverTimestamp(),
             "createdBy": userId,
-            "isPublic": isPublic
+            "isPublic": isPublic,
+            "runCount": 0  // 실행 횟수 초기화
         ]
         
         // 좌표 배열 준비
@@ -319,12 +353,16 @@ class MapViewModel: ObservableObject {
             "userId": userId
         ]
         
-        // Firestore에 저장
+        // firestore 에 저장. setData 함수의 콜백 부분 수정
         runRef.setData(runData) { error in
             if let error = error {
                 print("Error saving run: \(error)")
                 completion(false)
             } else {
+                // 성공적으로 저장되면 코스 실행 횟수 증가
+                if !courseId.isEmpty {
+                    self.incrementCourseRunCount(courseId: courseId)
+                }
                 completion(true)
             }
         }
