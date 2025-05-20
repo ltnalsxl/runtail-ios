@@ -349,7 +349,7 @@ struct ExploreTabView: View {
                                 Image(systemName: "figure.run")
                                     .font(.system(size: 10))
                                 
-                                Text("\(getRunCount(courseId: course.id))")
+                                Text("\(course.runCount)")  // 실제 데이터 사용
                                     .font(.system(size: 12))
                             }
                             .foregroundColor(.gray)
@@ -400,15 +400,14 @@ struct ExploreTabView: View {
                     return
                 }
                 
-                print("내 코스 로드: \(documents.count)개")
-                
-                // 코스 파싱
+                // 코스 파싱 수정
                 var courses: [Course] = []
                 for document in documents {
                     let data = document.data()
                     
                     if let coordsData = data["coordinates"] as? [[String: Any]] {
                         let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                        let runCount = data["runCount"] as? Int ?? 0 // runCount 추가
                         
                         let course = Course(
                             id: document.documentID,
@@ -423,7 +422,8 @@ struct ExploreTabView: View {
                             },
                             createdAt: timestamp,
                             createdBy: data["createdBy"] as? String ?? "",
-                            isPublic: data["isPublic"] as? Bool ?? false
+                            isPublic: data["isPublic"] as? Bool ?? false,
+                            runCount: runCount // 추가된 필드
                         )
                         
                         courses.append(course)
@@ -469,6 +469,8 @@ struct ExploreTabView: View {
                     
                     if let coordsData = data["coordinates"] as? [[String: Any]] {
                         let timestamp = (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
+                        let runCount = data["runCount"] as? Int ?? 0 // runCount 추가
+
                         
                         let course = Course(
                             id: document.documentID,
@@ -483,7 +485,9 @@ struct ExploreTabView: View {
                             },
                             createdAt: timestamp,
                             createdBy: data["createdBy"] as? String ?? "",
-                            isPublic: data["isPublic"] as? Bool ?? false
+                            isPublic: data["isPublic"] as? Bool ?? false,
+                            runCount: runCount // 추가된 필드
+
                         )
                         
                         courses.append(course)
@@ -599,14 +603,13 @@ struct ExploreTabView: View {
     
     // 코스 정렬하기
     private func sortCourses() {
-        // 내 코스 정렬
         switch sortOption {
         case 0: // 거리순
             myCourses.sort { $0.distance < $1.distance }
             publicCourses.sort { $0.distance < $1.distance }
-        case 1: // 인기순 (실행 횟수 기준)
-            myCourses.sort { getRunCount(courseId: $0.id) > getRunCount(courseId: $1.id) }
-            publicCourses.sort { getRunCount(courseId: $0.id) > getRunCount(courseId: $1.id) }
+        case 1: // 인기순 - 샘플 데이터 대신 실제 runCount 사용
+            myCourses.sort { $0.runCount > $1.runCount }
+            publicCourses.sort { $0.runCount > $1.runCount }
         case 2: // 최신순
             myCourses.sort { $0.createdAt > $1.createdAt }
             publicCourses.sort { $0.createdAt > $1.createdAt }
