@@ -3,7 +3,7 @@
 //  RunTail
 //
 //  Created by 이수민 on 5/6/25.
-//  Updated with running tracking features
+//  Updated with running tracking features and follow course functionality
 //
 
 import SwiftUI
@@ -17,9 +17,6 @@ class MapViewModel: ObservableObject {
     // MARK: - 사용자 데이터
     @Published var userEmail: String = ""
     @Published var userId: String = ""
-    // 코스 따라 달리기 관련 상태
-    @Published var isFollowingCourse = false
-    @Published var currentFollowingCourse: Course?
     
     // MARK: - 데이터 상태
     @Published var recentRuns: [Run] = []
@@ -44,6 +41,16 @@ class MapViewModel: ObservableObject {
     @Published var showCourseDetailView = false
     @Published var selectedCourseId: String?
     
+    // MARK: - 따라 달리기 관련 상태
+    @Published var isFollowingCourse = false
+    @Published var currentFollowingCourse: Course?
+    @Published var courseProgress: Double = 0.0 // 0.0 ~ 1.0 (완주율)
+    @Published var distanceFromCourse: Double = 0.0 // 코스에서 벗어난 거리 (미터)
+    @Published var currentCoursePoint: Int = 0 // 현재 목표로 하는 코스 포인트 인덱스
+    @Published var isOffCourse = false // 코스에서 벗어났는지 여부
+    @Published var nextWaypoint: Coordinate? // 다음 목표 지점
+    @Published var remainingDistance: Double = 0.0 // 남은 거리
+    
     // MARK: - 로그아웃 관련 상태
     @Published var showLogoutAlert = false
     @Published var isLoggedOut = false
@@ -58,6 +65,9 @@ class MapViewModel: ObservableObject {
     private var recordingTimer: Timer?
     private var lastLocation: CLLocationCoordinate2D?
     private var pausedTime: TimeInterval = 0
+    
+    // 코스 따라가기 허용 거리 (미터)
+    private let maxDistanceFromCourse: Double = 50.0
     
     // MARK: - 탐색 카테고리
     let exploreCategories = [
@@ -196,6 +206,17 @@ class MapViewModel: ObservableObject {
         lastLocation = coordinate
     }
     
+    /// 따라 달리기용 위치 업데이트 (코스 추적 포함)
+    func addLocationToRecordingWithCourseTracking(coordinate: CLLocationCoordinate2D) {
+        // 기존 위치 기록 로직
+        addLocationToRecording(coordinate: coordinate)
+        
+        // 따라 달리기 모드일 때 코스 추적
+        if isFollowingCourse {
+            updateCourseTracking(userLocation: coordinate)
+        }
+    }
+    
     /// 러닝 기록 종료
     func stopRecording(completion: @escaping (Bool, String?) -> Void) {
         // 타이머 중지
@@ -205,6 +226,7 @@ class MapViewModel: ObservableObject {
         guard isRecording, let startTime = recordingStartTime, !recordedCoordinates.isEmpty else {
             isRecording = false
             isPaused = false
+            stopFollowingCourse() // 따라 달리기도 중단
             completion(false, "기록된 데이터가 없습니다.")
             return
         }
@@ -221,12 +243,200 @@ class MapViewModel: ObservableObject {
         isRecording = false
         isPaused = false
         
+        // 따라 달리기 중단
+        if isFollowingCourse {
+            stopFollowingCourse()
+        }
+        
         // 저장 프로세스는 알림창 응답 후 처리됨
         // 기본적으로 성공 콜백
         completion(true, nil)
     }
-    // 새 함수 추가
-    // 클래스 내에 새 함수 추가
+    
+    // MARK: - 따라 달리기 기능
+    
+    /// 따라 달리기 시작
+    func startFollowingCourse(_ course: Course) {
+        // 기본 러닝 시작
+        startRecording()
+        
+        // 따라 달리기 모드 설정
+        isFollowingCourse = true
+        currentFollowingCourse = course
+        courseProgress = 0.0
+        currentCoursePoint = 0
+        isOffCourse = false
+        distanceFromCourse = 0.0
+        remainingDistance = course.distance
+        
+        // 첫 번째 웨이포인트 설정
+        if !course.coordinates.isEmpty {
+            nextWaypoint = course.coordinates.first
+        }
+        
+        print("따라 달리기 시작: \(course.title)")
+    }
+    
+    /// 위치 업데이트 시 코스 추적
+    func updateCourseTracking(userLocation: CLLocationCoordinate2D) {
+        guard isFollowingCourse,
+              let course = currentFollowingCourse,
+              !course.coordinates.isEmpty else { return }
+        
+        let userCLLocation = CLLocation(latitude: userLocation.latitude, longitude: userLocation.longitude)
+        
+        // 현재 사용자와 가장 가까운 코스 포인트 찾기
+        let (closestPoint, closestDistance) = findClosestPointOnCourse(userLocation: userCLLocation, course: course)
+        
+        // 코스에서 벗어난 거리 업데이트
+        distanceFromCourse = closestDistance
+        
+        // 코스 이탈 여부 확인
+        isOffCourse = closestDistance > maxDistanceFromCourse
+        
+        // 진행률 계산
+        let progressIndex = max(closestPoint, currentCoursePoint)
+        courseProgress = Double(progressIndex) / Double(course.coordinates.count - 1)
+        
+        // 현재 코스 포인트 업데이트
+        if progressIndex > currentCoursePoint {
+            currentCoursePoint = progressIndex
+            
+            // 다음 웨이포인트 설정
+            updateNextWaypoint(course: course)
+        }
+        
+        // 남은 거리 계산
+        updateRemainingDistance(course: course, currentIndex: progressIndex)
+        
+        // 완주 체크
+        checkCourseCompletion(course: course)
+    }
+    
+    /// 코스상 가장 가까운 지점 찾기
+    private func findClosestPointOnCourse(userLocation: CLLocation, course: Course) -> (Int, Double) {
+        var closestIndex = 0
+        var minDistance = Double.greatestFiniteMagnitude
+        
+        for (index, coordinate) in course.coordinates.enumerated() {
+            let courseLocation = CLLocation(latitude: coordinate.lat, longitude: coordinate.lng)
+            let distance = userLocation.distance(from: courseLocation)
+            
+            if distance < minDistance {
+                minDistance = distance
+                closestIndex = index
+            }
+        }
+        
+        return (closestIndex, minDistance)
+    }
+    
+    /// 다음 웨이포인트 업데이트
+    private func updateNextWaypoint(course: Course) {
+        // 앞으로 200미터 내의 다음 주요 지점을 웨이포인트로 설정
+        let lookAheadDistance: Double = 200.0
+        var accumulatedDistance: Double = 0.0
+        
+        for i in currentCoursePoint..<(course.coordinates.count - 1) {
+            let currentPoint = CLLocation(latitude: course.coordinates[i].lat, longitude: course.coordinates[i].lng)
+            let nextPoint = CLLocation(latitude: course.coordinates[i + 1].lat, longitude: course.coordinates[i + 1].lng)
+            
+            accumulatedDistance += currentPoint.distance(from: nextPoint)
+            
+            if accumulatedDistance >= lookAheadDistance {
+                nextWaypoint = course.coordinates[i + 1]
+                break
+            }
+        }
+        
+        // 코스 끝에 가까우면 마지막 지점을 웨이포인트로
+        if currentCoursePoint >= course.coordinates.count - 10 {
+            nextWaypoint = course.coordinates.last
+        }
+    }
+    
+    /// 남은 거리 계산
+    private func updateRemainingDistance(course: Course, currentIndex: Int) {
+        var remaining: Double = 0.0
+        
+        for i in currentIndex..<(course.coordinates.count - 1) {
+            let currentPoint = CLLocation(latitude: course.coordinates[i].lat, longitude: course.coordinates[i].lng)
+            let nextPoint = CLLocation(latitude: course.coordinates[i + 1].lat, longitude: course.coordinates[i + 1].lng)
+            remaining += currentPoint.distance(from: nextPoint)
+        }
+        
+        remainingDistance = remaining
+    }
+    
+    /// 완주 체크
+    private func checkCourseCompletion(course: Course) {
+        // 마지막 지점에서 50미터 이내에 도달하면 완주로 판정
+        let finishLineDistance: Double = 50.0
+        
+        if let lastCoordinate = course.coordinates.last {
+            let finishLine = CLLocation(latitude: lastCoordinate.lat, longitude: lastCoordinate.lng)
+            
+            if let userLocation = recordedCoordinates.last {
+                let userCLLocation = CLLocation(latitude: userLocation.lat, longitude: userLocation.lng)
+                let distanceToFinish = userCLLocation.distance(from: finishLine)
+                
+                if distanceToFinish <= finishLineDistance && courseProgress > 0.8 {
+                    completeCourseFollow()
+                }
+            }
+        }
+    }
+    
+    /// 코스 완주 처리
+    private func completeCourseFollow() {
+        isFollowingCourse = false
+        courseProgress = 1.0
+        
+        // 완주 알림 표시
+        DispatchQueue.main.async {
+            // 완주 축하 알림이나 화면 표시
+            print("🎉 코스 완주! 축하합니다!")
+        }
+    }
+    
+    /// 방향 안내 메시지 생성
+    func getNavigationInstruction() -> String {
+        guard isFollowingCourse,
+              let nextWaypoint = nextWaypoint,
+              let userLocation = recordedCoordinates.last else {
+            return ""
+        }
+        
+        let userCLLocation = CLLocation(latitude: userLocation.lat, longitude: userLocation.lng)
+        let waypointLocation = CLLocation(latitude: nextWaypoint.lat, longitude: nextWaypoint.lng)
+        let distance = userCLLocation.distance(from: waypointLocation)
+        
+        if isOffCourse {
+            return "⚠️ 코스에서 벗어났습니다. 코스로 돌아가세요."
+        }
+        
+        if distance < 10 {
+            return "✅ 목표 지점에 도착했습니다."
+        } else if distance < 50 {
+            return "🎯 목표 지점까지 \(Int(distance))m"
+        } else {
+            return "➡️ 코스를 따라 계속 진행하세요."
+        }
+    }
+    
+    /// 코스 따라가기 중단
+    func stopFollowingCourse() {
+        isFollowingCourse = false
+        currentFollowingCourse = nil
+        courseProgress = 0.0
+        currentCoursePoint = 0
+        isOffCourse = false
+        distanceFromCourse = 0.0
+        nextWaypoint = nil
+        remainingDistance = 0.0
+    }
+    
+    // MARK: - 코스 실행 횟수 증가
     func incrementCourseRunCount(courseId: String) {
         guard !courseId.isEmpty else { return }
         guard let userId = Auth.auth().currentUser?.uid else { return }
@@ -259,6 +469,7 @@ class MapViewModel: ObservableObject {
             }
         }
     }
+    
     /// 코스 저장
     func saveRecordingAsCourse(title: String, isPublic: Bool = false, completion: @escaping (Bool, String?) -> Void) {
         guard !recordedCoordinates.isEmpty else {
@@ -487,7 +698,6 @@ class MapViewModel: ObservableObject {
     }
     
     // MARK: - 내 코스 데이터 로드
-    // MapViewModel.swift의 loadMyCourses 함수를 수정
     func loadMyCourses() {
         let db = Firestore.firestore()
         
@@ -542,7 +752,6 @@ class MapViewModel: ObservableObject {
                         }
                     }
                 }
-                
                 // 최신순으로 정렬
                 courses.sort { $0.createdAt > $1.createdAt }
                 
@@ -581,11 +790,13 @@ class MapViewModel: ObservableObject {
             },
             createdAt: timestamp,
             createdBy: data["createdBy"] as? String ?? "",
-            isPublic: data["isPublic"] as? Bool ?? false
+            isPublic: data["isPublic"] as? Bool ?? false,
+            runCount: data["runCount"] as? Int ?? 0
         )
         
         return course
     }
+    
     // MARK: - 유틸리티 함수
     
     /// 코스 객체 가져오기
@@ -649,23 +860,4 @@ class MapViewModel: ObservableObject {
         
         return totalPace / Double(recentValidRuns.count)
     }
-    
-    // 코스 따라 달리기 모드로 러닝 시작
-    func startRecordingFollowCourse(_ course: Course) {
-        isRecording = true
-        isPaused = false
-        recordedCoordinates = []
-        recordingStartTime = Date()
-        recordingElapsedTime = 0
-        recordingDistance = 0
-        lastLocation = nil
-        pausedTime = 0
-        
-        // 코스 따라가기 모드를 위한 추가 로직
-        currentFollowingCourse = course
-        isFollowingCourse = true
-        
-        // 타이머 시작
-        startTimer()
-    }
-}
+ }
