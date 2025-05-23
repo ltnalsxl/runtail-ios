@@ -244,23 +244,29 @@ struct HomeTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 지도 영역 - 상단 절반
+            // 지도 영역 - 수정된 부분
             mapSection
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped() // 지도가 영역을 벗어나지 않도록 클리핑
             
-            // 통계 바
-            statisticsBar
-            
-            // 스크롤 가능한 컨텐츠 영역
-            ScrollView {
-                VStack(spacing: 24) {
-                    // 최근 활동 섹션
-                    recentRunsSection
-                    
-                    // 탐색 섹션
-                    categoriesSection
+            // 통계 바와 스크롤 영역을 하나의 VStack으로 묶음
+            VStack(spacing: 0) {
+                // 통계 바
+                statisticsBar
+                
+                // 스크롤 가능한 컨텐츠 영역
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // 최근 활동 섹션
+                        recentRunsSection
+                        
+                        // 탐색 섹션
+                        categoriesSection
+                    }
+                    .padding(.bottom, 100) // 하단 탭바 공간 확보
                 }
-                .padding(.bottom, 100) // 하단 탭바 공간 확보
             }
+            .frame(maxHeight: .infinity) // 남은 공간을 모두 차지
         }
         .alert("코스 저장", isPresented: $viewModel.showSaveAlert) {
             TextField("코스 이름", text: $viewModel.tempCourseName)
@@ -292,13 +298,13 @@ struct HomeTabView: View {
         .background(Color.rtBackground)
     }
     
-    // MARK: - 지도 섹션
+    // MARK: - 지도 섹션 - 수정된 부분
     var mapSection: some View {
-        ZStack(alignment: .bottom) {
-            // 지도 영역
+        ZStack {
+            // 지도 영역 - 수정된 부분
             #if swift(>=5.9) // iOS 17 이상
             if #available(iOS 17.0, *) {
-                Map(position: .constant(.automatic), content: {
+                Map(position: .constant(.region(locationService.region)), content: {
                     // 사용자 현재 위치
                     UserAnnotation()
                     
@@ -369,9 +375,8 @@ struct HomeTabView: View {
                     MapCompass()
                     MapScaleView()
                 }
-                .frame(height: UIScreen.main.bounds.height * 0.4)
-                .edgesIgnoringSafeArea(.horizontal) // 수평 가장자리 무시
-
+                .ignoresSafeArea(.all) // 모든 안전 영역 무시
+                
             } else {
                 // iOS 16 이하용 맵 뷰
                 EnhancedMapView(
@@ -384,9 +389,7 @@ struct HomeTabView: View {
                         : [],
                     isPaused: viewModel.isPaused
                 )
-                .frame(height: UIScreen.main.bounds.height * 0.4)
-                .edgesIgnoringSafeArea(.horizontal) // 수평 가장자리 무시
-
+                .ignoresSafeArea(.all) // 모든 안전 영역 무시
             }
             #else
             // iOS 16 이하용 맵 뷰
@@ -400,26 +403,38 @@ struct HomeTabView: View {
                     : [],
                 isPaused: viewModel.isPaused
             )
-            .frame(height: UIScreen.main.bounds.height * 0.4)
-            .edgesIgnoringSafeArea(.horizontal) // 수평 가장자리 무시
-
+            .ignoresSafeArea(.all) // 모든 안전 영역 무시
             #endif
             
-            // 지도 컨트롤
-            mapControls
-            
-            // 검색 바 - 달리기 중이 아닐 때만 표시
-            if !viewModel.isRecording {
-                searchBar
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
-                    .frame(maxWidth: CGFloat.infinity, alignment: .top)
-            }
-            
-            // 달리기 시작/종료 버튼
-            startRunningButton
-                .padding(.horizontal, 16)
+            // 지도 위 오버레이들
+            VStack {
+                // 상단 오버레이들
+                VStack(spacing: 16) {
+                    // 검색 바 - 달리기 중이 아닐 때만 표시
+                    if !viewModel.isRecording {
+                        searchBar
+                            .padding(.horizontal, 16)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.top, 16)
+                
+                // 하단 컨트롤들
+                HStack {
+                    Spacer()
+                    
+                    // 지도 컨트롤
+                    mapControls
+                        .padding(.trailing, 16)
+                }
                 .padding(.bottom, 16)
+                
+                // 달리기 시작/종료 버튼
+                startRunningButton
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 16)
+            }
         }
     }
     
@@ -560,8 +575,6 @@ struct HomeTabView: View {
                 .foregroundColor(.rtError)
             }
         }
-        .frame(maxWidth: CGFloat.infinity, maxHeight: CGFloat.infinity, alignment: .topTrailing)
-        .padding(16)
     }
     
     // 지도 컨트롤 버튼
