@@ -632,7 +632,7 @@ struct CourseDetailView: View {
                 // 0.5초 후 러닝 시작 (뷰 전환 후)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     // MapViewModel에 코스 팔로우 모드로 러닝 시작
-                    viewModel.startRecordingFollowCourse(course)
+                    viewModel.startFollowingCourse(course)
                 }
             }
         }

@@ -12,7 +12,200 @@ import FirebaseAuth
 import FirebaseFirestore
 import Combine
 
+// MARK: - EnhancedMapView (iOS 16 이하용)
+struct EnhancedMapView: UIViewRepresentable {
+    @Binding var region: MKCoordinateRegion
+    var showsUserLocation: Bool
+    var recordedCoordinates: [Coordinate]
+    var previewCourse: Course?
+    var nearbyCourses: [Course]
+    var isPaused: Bool
+
+    func makeUIView(context: Context) -> MKMapView {
+        let mapView = MKMapView()
+        mapView.delegate = context.coordinator
+        mapView.showsUserLocation = showsUserLocation
+        mapView.setRegion(region, animated: true)
+        mapView.mapType = .standard
+        mapView.showsCompass = true
+        mapView.showsScale = true
+        return mapView
+    }
+
+    func updateUIView(_ uiView: MKMapView, context: Context) {
+        uiView.setRegion(region, animated: true)
+        
+        // 기존 오버레이 제거
+        uiView.removeOverlays(uiView.overlays)
+        
+        // 기존 어노테이션 제거 (사용자 위치 제외)
+        let annotations = uiView.annotations.filter { !($0 is MKUserLocation) }
+        uiView.removeAnnotations(annotations)
+        
+        // 현재 기록 중인 러닝 코스 표시
+        if !recordedCoordinates.isEmpty {
+            let coordinates = recordedCoordinates.map {
+                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+            }
+            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+            polyline.title = "recording"
+            uiView.addOverlay(polyline)
+        }
+        
+        // 미리보기 코스 표시
+        if let course = previewCourse {
+            let coordinates = course.coordinates.map {
+                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+            }
+            
+            // 시작점과 종료점 표시
+            if let first = coordinates.first {
+                let startPin = CourseAnnotation(
+                    coordinate: first,
+                    title: "시작",
+                    type: .start
+                )
+                uiView.addAnnotation(startPin)
+            }
+            
+            if let last = coordinates.last, coordinates.count > 1 {
+                let endPin = CourseAnnotation(
+                    coordinate: last,
+                    title: "종료",
+                    type: .end
+                )
+                uiView.addAnnotation(endPin)
+            }
+            
+            // 코스 경로 표시
+            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+            polyline.title = "preview"
+            uiView.addOverlay(polyline)
+        }
+        
+        // 주변 코스 표시
+        for course in nearbyCourses {
+            let coordinates = course.coordinates.map {
+                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+            }
+            
+            // 시작점 표시
+            if let first = coordinates.first {
+                let pin = CourseAnnotation(
+                    coordinate: first,
+                    title: course.title,
+                    type: .nearby
+                )
+                uiView.addAnnotation(pin)
+            }
+            
+            // 코스 경로 표시
+            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+            polyline.title = "nearby"
+            uiView.addOverlay(polyline)
+        }
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    // 코스 어노테이션
+    class CourseAnnotation: NSObject, MKAnnotation {
+        enum AnnotationType {
+            case start, end, nearby
+        }
+        
+        let coordinate: CLLocationCoordinate2D
+        let title: String?
+        let type: AnnotationType
+        
+        init(coordinate: CLLocationCoordinate2D, title: String, type: AnnotationType) {
+            self.coordinate = coordinate
+            self.title = title
+            self.type = type
+        }
+    }
+    
+    class Coordinator: NSObject, MKMapViewDelegate {
+        var parent: EnhancedMapView
+        
+        init(_ parent: EnhancedMapView) {
+            self.parent = parent
+        }
+        
+        // 커스텀 어노테이션 뷰
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            if annotation is MKUserLocation {
+                return nil
+            }
+            
+            if let courseAnnotation = annotation as? CourseAnnotation {
+                let identifier = "CourseAnnotation"
+                var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+                
+                if annotationView == nil {
+                    annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                    annotationView?.canShowCallout = true
+                }
+                
+                annotationView?.annotation = annotation
+                
+                // 어노테이션 타입에 따른 스타일 변경
+                switch courseAnnotation.type {
+                case .start:
+                    annotationView?.markerTintColor = UIColor(Color.rtSuccess)
+                    annotationView?.glyphImage = UIImage(systemName: "flag.fill")
+                case .end:
+                    annotationView?.markerTintColor = UIColor(Color.rtError)
+                    annotationView?.glyphImage = UIImage(systemName: "flag.checkered")
+                case .nearby:
+                    annotationView?.markerTintColor = UIColor(Color.rtPrimary)
+                    annotationView?.glyphImage = UIImage(systemName: "mappin")
+                }
+                
+                return annotationView
+            }
+            
+            return nil
+        }
+        
+        // 커스텀 오버레이 렌더러
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let polyline = overlay as? MKPolyline {
+                let renderer = MKPolylineRenderer(polyline: polyline)
+                
+                switch polyline.title ?? "" {
+                case "recording":
+                    // 현재 기록 중인 러닝
+                    renderer.strokeColor = parent.isPaused ?
+                        UIColor(Color.rtWarning) :
+                        UIColor(Color.rtPrimary)
+                    renderer.lineWidth = 5
+                case "preview":
+                    // 미리보기 코스
+                    renderer.strokeColor = UIColor(Color.rtSecondary.opacity(0.8))
+                    renderer.lineWidth = 5
+                case "nearby":
+                    // 주변 코스
+                    renderer.strokeColor = UIColor(Color.rtPrimary.opacity(0.6))
+                    renderer.lineWidth = 3
+                default:
+                    renderer.strokeColor = UIColor(Color.rtPrimary)
+                    renderer.lineWidth = 4
+                }
+                
+                return renderer
+            }
+            
+            return MKOverlayRenderer(overlay: overlay)
+        }
+    }
+}
+
+// MARK: - HomeTabView
 struct HomeTabView: View {
+    // 기존 HomeTabView 코드가 이어집니다...
     @ObservedObject var viewModel: MapViewModel
     @ObservedObject var locationService: LocationService
     @Environment(\.checkBeforeStartRunning) var checkBeforeStartRunning

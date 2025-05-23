@@ -97,7 +97,7 @@ class VoiceGuidanceService: NSObject, ObservableObject {
         } else if distance < 1000 {
             distanceText = "\(Int(distance/10)*10)미터 후"
         } else {
-            distanceText = "약 \(Int(distance/100)/10.0)킬로미터 후"
+            distanceText = String(format: "약 %.1f킬로미터 후", distance / 1000)
         }
         
         announce("\(distanceText) \(instruction)")
