@@ -15,6 +15,7 @@ struct CourseSelectionView: View {
     
     @State private var nearbyCourses: [Course] = []
     @State private var selectedCourse: Course?
+    @State private var isLoading = true
     
     var body: some View {
         NavigationView {
@@ -24,11 +25,13 @@ struct CourseSelectionView: View {
                     Button("취소") {
                         presentationMode.wrappedValue.dismiss()
                     }
+                    .foregroundColor(.rtPrimary)
                     
                     Spacer()
                     
                     Text("코스 선택")
                         .font(.headline)
+                        .fontWeight(.semibold)
                     
                     Spacer()
                     
@@ -39,11 +42,25 @@ struct CourseSelectionView: View {
                     }
                     .disabled(selectedCourse == nil)
                     .foregroundColor(selectedCourse == nil ? .gray : .rtPrimary)
+                    .fontWeight(.semibold)
                 }
                 .padding()
+                .background(Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
                 
                 // 코스 목록
-                if nearbyCourses.isEmpty {
+                if isLoading {
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .scaleEffect(1.2)
+                        
+                        Text("주변 코스를 검색 중...")
+                            .font(.subheadline)
+                            .foregroundColor(.gray)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if nearbyCourses.isEmpty {
                     VStack(spacing: 16) {
                         Image(systemName: "map")
                             .font(.system(size: 48))
@@ -57,18 +74,31 @@ struct CourseSelectionView: View {
                             .font(.subheadline)
                             .foregroundColor(.gray.opacity(0.7))
                             .multilineTextAlignment(.center)
+                        
+                        Button("코스 만들기") {
+                            presentationMode.wrappedValue.dismiss()
+                            // 자유 달리기로 이동
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.rtPrimary)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
-                        ForEach(nearbyCourses) { course in
-                            CourseRowView(
-                                course: course,
-                                isSelected: selectedCourse?.id == course.id,
-                                onSelect: { selectedCourse = course }
-                            )
+                        Section(header: Text("주변 코스 (\(nearbyCourses.count)개)")) {
+                            ForEach(nearbyCourses) { course in
+                                CourseRowView(
+                                    course: course,
+                                    isSelected: selectedCourse?.id == course.id,
+                                    onSelect: { selectedCourse = course }
+                                )
+                            }
                         }
                     }
+                    .listStyle(InsetGroupedListStyle())
                 }
             }
         }
@@ -78,8 +108,17 @@ struct CourseSelectionView: View {
     }
     
     private func loadNearbyCourses() {
-        guard let userLocation = locationService.lastLocation?.coordinate else { return }
-        nearbyCourses = viewModel.findNearbyCoursesFor(coordinate: userLocation, radius: 10000) // 10km 반경
+        isLoading = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            guard let userLocation = locationService.lastLocation?.coordinate else {
+                isLoading = false
+                return
+            }
+            
+            nearbyCourses = viewModel.findNearbyCoursesFor(coordinate: userLocation, radius: 10000) // 10km 반경
+            isLoading = false
+        }
     }
     
     private func startFollowingSelectedCourse(_ course: Course) {
@@ -103,19 +142,41 @@ struct CourseRowView: View {
     
     var body: some View {
         Button(action: onSelect) {
-            HStack {
+            HStack(spacing: 12) {
+                // 코스 미리보기 아이콘
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.rtPrimary.opacity(0.1) : Color.gray.opacity(0.1))
+                        .frame(width: 50, height: 50)
+                    
+                    Image(systemName: "map.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(isSelected ? .rtPrimary : .gray)
+                }
+                
                 VStack(alignment: .leading, spacing: 4) {
                     Text(course.title)
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    Text("\(Formatters.formatDistance(course.distance)) • \(estimatedTimeText)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 8) {
+                        Text(Formatters.formatDistance(course.distance))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
+                        Text("•")
+                            .foregroundColor(.secondary)
+                        
+                        Text(estimatedTimeText)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text("실행 횟수: \(course.runCount)회")
-                        .font(.caption2)
-                        .foregroundColor(.gray)
+                    if course.runCount > 0 {
+                        Text("실행 횟수: \(course.runCount)회")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
                 }
                 
                 Spacer()
@@ -124,9 +185,13 @@ struct CourseRowView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.rtPrimary)
                         .font(.title2)
+                } else {
+                    Image(systemName: "circle")
+                        .foregroundColor(.gray.opacity(0.5))
+                        .font(.title2)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 8)
         }
         .buttonStyle(PlainButtonStyle())
     }
