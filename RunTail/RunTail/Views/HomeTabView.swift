@@ -373,17 +373,32 @@ struct HomeTabView: View {
                                 .shadow(radius: 2)
                             }
                         }
-                    }
-                    
-                    // 주변 코스 표시 (러닝 중이 아닐 때)
+                    }// 주변 코스 표시 (러닝 중이 아닐 때)
                     if !viewModel.isRecording, !viewModel.isFollowingCourse,
                        let userLocation = locationService.lastLocation?.coordinate {
                         let nearbyCourses = viewModel.findNearbyCoursesFor(coordinate: userLocation, radius: 5000)
                         
                         ForEach(Array(nearbyCourses.prefix(3)), id: \.id) { course in
+                            // 코스 전체 경로 표시
+                            MapPolyline(coordinates: course.coordinates.map {
+                                CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
+                            })
+                            .stroke(Color.rtPrimary.opacity(0.6), lineWidth: 3)
+                            
+                            // 시작점 마커
                             if let firstCoord = course.coordinates.first {
-                                Marker(course.title, coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng))
-                                    .tint(Color.rtPrimary)
+                                Annotation(course.title, coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng)) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.rtPrimary)
+                                            .frame(width: 20, height: 20)
+                                        
+                                        Image(systemName: "flag.fill")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.white)
+                                    }
+                                    .shadow(radius: 2)
+                                }
                             }
                         }
                     }
