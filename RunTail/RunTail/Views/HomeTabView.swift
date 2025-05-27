@@ -89,6 +89,11 @@ struct EnhancedMapView: UIViewRepresentable {
                 CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng)
             }
             
+            // 코스 전체 경로 표시
+            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
+            polyline.title = "nearby"
+            uiView.addOverlay(polyline)
+            
             // 시작점 표시
             if let first = coordinates.first {
                 let pin = CourseAnnotation(
@@ -98,11 +103,6 @@ struct EnhancedMapView: UIViewRepresentable {
                 )
                 uiView.addAnnotation(pin)
             }
-            
-            // 코스 경로 표시
-            let polyline = MKPolyline(coordinates: coordinates, count: coordinates.count)
-            polyline.title = "nearby"
-            uiView.addOverlay(polyline)
         }
     }
     
@@ -205,7 +205,6 @@ struct EnhancedMapView: UIViewRepresentable {
 
 // MARK: - HomeTabView
 struct HomeTabView: View {
-    // 기존 HomeTabView 코드가 이어집니다...
     @ObservedObject var viewModel: MapViewModel
     @ObservedObject var locationService: LocationService
     @Environment(\.checkBeforeStartRunning) var checkBeforeStartRunning
@@ -373,7 +372,9 @@ struct HomeTabView: View {
                                 .shadow(radius: 2)
                             }
                         }
-                    }// 주변 코스 표시 (러닝 중이 아닐 때)
+                    }
+                    
+                    // 주변 코스 표시 (러닝 중이 아닐 때)
                     if !viewModel.isRecording, !viewModel.isFollowingCourse,
                        let userLocation = locationService.lastLocation?.coordinate {
                         let nearbyCourses = viewModel.findNearbyCoursesFor(coordinate: userLocation, radius: 5000)
@@ -519,7 +520,7 @@ struct HomeTabView: View {
     var startRunningButton: some View {
         VStack(spacing: 8) {
             if viewModel.isRecording || viewModel.isFollowingCourse {
-                // 달리기 중일 때 표시되는 뷰
+                // 러닝 중일 때 표시되는 뷰
                 RunningSessionCard(
                     elapsedTime: viewModel.recordingElapsedTime,
                     distance: viewModel.recordingDistance,
@@ -661,7 +662,7 @@ struct HomeTabView: View {
         }
     }
     
-    // MARK: - 러닝 세션 카드 (수정됨)
+    // MARK: - 러닝 세션 카드
     struct RunningSessionCard: View {
         var elapsedTime: TimeInterval
         var distance: Double
@@ -1121,4 +1122,17 @@ struct HomeTabView: View {
         let distanceInKm = viewModel.recordingDistance / 1000
         return viewModel.recordingElapsedTime / distanceInKm
     }
- }
+    
+    // formatTime 함수 추가 (HomeTabView 레벨에서)
+    private func formatTime(_ seconds: TimeInterval) -> String {
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) % 3600) / 60
+        let secs = Int(seconds) % 60
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        } else {
+            return String(format: "%02d:%02d", minutes, secs)
+        }
+    }
+}
