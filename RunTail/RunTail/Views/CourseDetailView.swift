@@ -33,7 +33,7 @@ struct CourseDetailView: View {
     var body: some View {
         ZStack {
             // 배경색
-            Color.rtBackground
+            Color.rtBackgroundAdaptive
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {

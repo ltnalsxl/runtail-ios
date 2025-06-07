@@ -286,7 +286,7 @@ struct HomeTabView: View {
         } message: {
             Text("방금 완료한 러닝을 코스로 저장합니다.")
         }
-        .background(Color.rtBackground)
+        .background(Color.rtBackgroundAdaptive)
     }
     
     // MARK: - 지도 섹션
@@ -472,7 +472,7 @@ struct HomeTabView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white)
+                .fill(Color.rtCardAdaptive)
                 .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
         )
     }
@@ -492,7 +492,7 @@ struct HomeTabView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(viewModel.isVoiceGuidanceEnabled ? .rtPrimary : .gray)
                     .frame(width: 36, height: 36)
-                    .background(Color.white)
+                    .background(Color.rtCardAdaptive)
                     .clipShape(Circle())
                     .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
             }
@@ -509,7 +509,7 @@ struct HomeTabView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.rtPrimary)
                     .frame(width: 36, height: 36)
-                    .background(Color.white)
+                    .background(Color.rtCardAdaptive)
                     .clipShape(Circle())
                     .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
             }
@@ -613,7 +613,7 @@ struct HomeTabView: View {
                                 )
                             }
                         }
-                        .background(Color.white)
+                        .background(Color.rtCardAdaptive)
                         .cornerRadius(20)
                         .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -867,7 +867,7 @@ struct HomeTabView: View {
             )
         }
         .padding(.vertical, 12)
-        .background(Color.white)
+        .background(Color.rtCardAdaptive)
         .cornerRadius(20)
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
         .padding(.horizontal, 16)
@@ -993,7 +993,7 @@ struct HomeTabView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 40)
-            .background(Color.white)
+            .background(Color.rtCardAdaptive)
             .cornerRadius(20)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 3)
             .padding(.horizontal, 16)
@@ -1044,7 +1044,7 @@ struct HomeTabView: View {
                     Spacer()
                 }
                 .padding(16)
-                .background(Color.white)
+                .background(Color.rtCardAdaptive)
                 .cornerRadius(20)
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
                 .frame(width: 280)
@@ -1094,7 +1094,7 @@ struct HomeTabView: View {
                         .foregroundColor(.gray)
                 }
                 .padding(16)
-                .background(Color.white)
+                .background(Color.rtCardAdaptive)
                 .cornerRadius(20)
                 .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 3)
                 .frame(width: 260)
