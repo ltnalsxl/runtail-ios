@@ -236,8 +236,13 @@ struct ExploreTabView: View {
                             // 코스 목록
                             VStack(spacing: 16) {
                                 ForEach(displayCourses) { course in
-                                    courseCard(for: course)
-                                        .padding(.horizontal)
+                                    ExploreCourseCard(
+                                        course: course,
+                                        viewModel: viewModel,
+                                        isFavorite: favoriteCourses.contains(course.id),
+                                        toggleFavorite: { toggleFavorite(courseId: course.id) }
+                                    )
+                                    .padding(.horizontal)
                                 }
                             }
                         }
@@ -257,117 +262,6 @@ struct ExploreTabView: View {
                 loadPublicCourses()
             }
         }
-    }
-    
-    // MARK: - 코스 카드 뷰
-    func courseCard(for course: Course) -> some View {
-        Button(action: {
-            // 코스 상세 화면으로 이동
-            viewModel.selectedCourseId = course.id
-            viewModel.showCourseDetailView = true
-        }) {
-            HStack(spacing: 16) {
-                // 코스 미리보기 이미지
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(viewModel.themeColor.opacity(0.1))
-                    
-                    Image(systemName: "map.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(viewModel.themeColor)
-                }
-                .frame(width: 80, height: 80)
-                
-                // 코스 정보
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text(course.title)
-                            .font(.system(size: 16, weight: .medium))
-                        
-                        Spacer()
-                        
-                        // 즐겨찾기 버튼
-                        Button(action: {
-                            toggleFavorite(courseId: course.id)
-                        }) {
-                            Image(systemName: favoriteCourses.contains(course.id) ? "star.fill" : "star")
-                                .font(.system(size: 18))
-                                .foregroundColor(favoriteCourses.contains(course.id) ? .yellow : .gray)
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                    }
-                    
-                    Text("\(Formatters.formatDistance(course.distance)) · 약 \(calculateEstimatedTime(distance: course.distance))")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                    
-                    // 태그 및 정보
-                    HStack {
-                        // 사용자 만든 코스인지 공개 코스인지
-                        if course.createdBy == Auth.auth().currentUser?.uid {
-                            if course.isPublic {
-                                Text("내 공개")
-                                    .font(.system(size: 12))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.1))
-                                    .foregroundColor(.green)
-                                    .cornerRadius(12)
-                            } else {
-                                Text("내 비공개")
-                                    .font(.system(size: 12))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(viewModel.themeColor.opacity(0.1))
-                                    .foregroundColor(viewModel.themeColor)
-                                    .cornerRadius(12)
-                            }
-                        } else if course.isPublic {
-                            Text("공개")
-                                .font(.system(size: 12))
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.blue.opacity(0.1))
-                                .foregroundColor(.blue)
-                                .cornerRadius(12)
-                        }
-                        
-                        // 거리 태그
-                        Text(getCourseTag(course: course))
-                            .font(.system(size: 12))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.orange.opacity(0.1))
-                            .foregroundColor(Color.orange)
-                            .cornerRadius(12)
-                        
-                        Spacer()
-                        
-                        // 실행 횟수 표시 (공개 코스인 경우)
-                        if course.isPublic {
-                            HStack(spacing: 4) {
-                                Image(systemName: "figure.run")
-                                    .font(.system(size: 10))
-                                
-                                Text("\(course.runCount)")  // 실제 데이터 사용
-                                    .font(.system(size: 12))
-                            }
-                            .foregroundColor(.gray)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.gray)
-            }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(20)
-            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-        }
-        .buttonStyle(PlainButtonStyle())
     }
     
     // MARK: - 헬퍼 함수들
