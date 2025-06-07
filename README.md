@@ -1,5 +1,7 @@
 # 🐾 RunTail – On Your Mark!
 
+![iOS CI](https://github.com/yourname/runtail-ios/actions/workflows/ios.yml/badge.svg)
+
 > **Create, share, and follow custom running routes — your personal running journey.**  
 > **나만의 러닝 루트를 만들고, 공유하고, 함께 달리는 커뮤니티 앱.**
 

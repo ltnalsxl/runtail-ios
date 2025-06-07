@@ -1,0 +1,20 @@
+name: iOS CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v3
+      - uses: xcodes-org/xcodes-action@v1
+        with:
+          xcode-version: '15.0'
+      - name: Build and test
+        run: |
+          xcodebuild -project RunTail/RunTail.xcodeproj -scheme RunTail \
+            -destination 'platform=iOS Simulator,name=iPhone 14' clean test | xcpretty
