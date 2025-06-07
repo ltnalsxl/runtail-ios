@@ -1,5 +1,6 @@
 import SwiftUI
 import Firebase
+import FirebaseAuth
 
 // Card used in ExploreTabView course lists
 struct ExploreCourseCard: View {
