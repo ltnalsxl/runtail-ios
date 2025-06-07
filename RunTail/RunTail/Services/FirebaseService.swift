@@ -11,26 +11,41 @@ import FirebaseAuth
 import FirebaseFirestore
 import MapKit
 
+protocol FirebaseAuthProtocol {
+    var currentUserEmail: String? { get }
+    var currentUserId: String? { get }
+    func signOut() throws
+}
+
+extension Auth: FirebaseAuthProtocol {
+    var currentUserEmail: String? { currentUser?.email }
+    var currentUserId: String? { currentUser?.uid }
+}
+
 class FirebaseService {
     static let shared = FirebaseService()
-    
-    private init() {}
+
+    private let auth: FirebaseAuthProtocol
+
+    init(auth: FirebaseAuthProtocol = Auth.auth()) {
+        self.auth = auth
+    }
     
     // MARK: - 인증 관련
     
     func logoutUser() -> Bool {
         do {
-            try Auth.auth().signOut()
+            try auth.signOut()
             return true
         } catch {
             print("로그아웃 오류: \(error.localizedDescription)")
             return false
         }
     }
-    
+
     func getCurrentUser() -> (id: String, email: String)? {
-        if let user = Auth.auth().currentUser {
-            return (id: user.uid, email: user.email ?? "")
+        if let id = auth.currentUserId, let email = auth.currentUserEmail {
+            return (id: id, email: email)
         }
         return nil
     }

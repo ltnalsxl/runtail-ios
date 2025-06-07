@@ -1,5 +1,7 @@
 # 🐾 RunTail – On Your Mark!
 
+![iOS CI](https://github.com/yourname/runtail-ios/actions/workflows/ios.yml/badge.svg)
+
 > **Create, share, and follow custom running routes — your personal running journey.**  
 > **나만의 러닝 루트를 만들고, 공유하고, 함께 달리는 커뮤니티 앱.**
 
@@ -47,6 +49,20 @@ open RunTail.xcodeproj
 - Firebase `GoogleService-Info.plist` 등록 필요
 - iOS 시뮬레이터 or 실기기
 
+### 📦 Install dependencies / 의존성 설치
+
+RunTail uses **Swift Package Manager** to manage dependencies such as Firebase.\
+Open `RunTail.xcodeproj` in Xcode and it will automatically resolve the packages.\
+If the packages fail to download select **File > Packages > Reset Package Caches**
+followed by **File > Packages > Resolve Package Versions**.
+
+### 🔐 Firebase Setup / Firebase 설정
+
+1. [Firebase console](https://console.firebase.google.com/)에서 프로젝트를 생성합니다.
+2. iOS 앱을 등록한 뒤 `GoogleService-Info.plist` 파일을 다운로드합니다.
+3. 이 파일을 프로젝트 루트의 `RunTail` 디렉터리에 추가합니다. `Info.plist`와
+   같은 위치에 두면 빌드 시 자동으로 포함됩니다.
+
 ---
 
 ## 📁 Folder Structure / 폴더 구조
@@ -59,6 +75,20 @@ RunTail/
 ├── Resources/
 ├── GoogleService-Info.plist  # gitignore로 제외됨
 ```
+
+---
+
+## 🧪 Running Tests / 테스트 실행
+
+Open the project in Xcode and select the **RunTail** scheme.\
+Choose **Product > Test** or press <kbd>⌘U</kbd> to execute the unit tests.\
+Alternatively, from the command line run:
+
+```bash
+xcodebuild test -scheme RunTail -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+If any CI status badges are configured for this repository they will appear at the top of this document.
 
 ---
 
