@@ -104,11 +104,16 @@ class MapViewModel: ObservableObject {
     )
     
     // MARK: - 생성자
-    init() {
-        if let user = Auth.auth().currentUser {
+    init(authProvider: FirebaseAuthProtocol? = nil, loadData: Bool = true) {
+        if let provider = authProvider {
+            userEmail = provider.currentUserEmail ?? ""
+            userId = provider.currentUserId ?? ""
+        } else if let user = Auth.auth().currentUser {
             userEmail = user.email ?? ""
             userId = user.uid
-            
+        }
+
+        if loadData && !userId.isEmpty {
             loadUserData()
             loadRecentRuns()
             loadMyCourses()
