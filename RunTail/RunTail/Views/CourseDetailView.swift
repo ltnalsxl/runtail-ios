@@ -81,10 +81,10 @@ struct CourseDetailView: View {
                             }
                             .padding(.top, getSafeAreaTop())
                             .padding(.horizontal, 16)
-                            
-                            Spacer()
-                        }
-                
+
+                    Spacer()
+                }
+
                 // 스크롤 가능한 콘텐츠
                 ScrollView {
                     VStack(spacing: 16) {
@@ -113,6 +113,7 @@ struct CourseDetailView: View {
                     .padding(.bottom, 30)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .navigationBarHidden(true)
         .onAppear {
