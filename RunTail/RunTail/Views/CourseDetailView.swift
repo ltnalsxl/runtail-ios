@@ -23,6 +23,7 @@ struct CourseDetailView: View {
     @State private var elevationData: [Double] = []
     @State private var showElevationChart = false
     @State private var showSummarySheet = false
+    @State private var alertMessage: String?
     
     // 의존성 주입
     @EnvironmentObject var viewModel: MapViewModel
@@ -152,6 +153,14 @@ struct CourseDetailView: View {
             )
             .presentationDetents([.medium, .large])
 
+        }
+        .alert("오류", isPresented: Binding(
+            get: { alertMessage != nil },
+            set: { value in if !value { alertMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { alertMessage = nil }
+        } message: {
+            Text(alertMessage ?? "")
         }
     }
     }
@@ -689,8 +698,7 @@ struct CourseDetailView: View {
                 isSaving = false
                 
                 if let error = error {
-                    print("Error updating course: \(error)")
-                    // 에러 처리
+                    alertMessage = error.localizedDescription
                 } else {
                     // 성공 시 코스 목록 갱신
                     viewModel.loadMyCourses()
@@ -705,8 +713,7 @@ struct CourseDetailView: View {
         let db = Firestore.firestore()
         db.collection("courses").document(course.id).delete { error in
             if let error = error {
-                print("Error deleting course: \(error)")
-                // 에러 처리
+                alertMessage = error.localizedDescription
             } else {
                 // 성공 시 코스 목록 갱신 후 이전 화면으로 돌아가기
                 viewModel.loadMyCourses()
