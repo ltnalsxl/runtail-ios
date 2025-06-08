@@ -33,7 +33,7 @@ struct CourseDetailView: View {
     var body: some View {
         ZStack {
             // 배경색
-            Color.rtBackground
+            Color.rtBackgroundAdaptive
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -43,7 +43,7 @@ struct CourseDetailView: View {
                     .cornerRadius(30, corners: [.bottomLeft, .bottomRight])
                     .ignoresSafeArea(edges: .top)
                     .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
-                    .overlay(
+                    .overlay(alignment: .top) {
                         // 헤더 내용
                         VStack {
                             // 뒤로가기, 제목, 공유 버튼
@@ -184,7 +184,7 @@ struct CourseDetailView: View {
                 HStack(spacing: 16) {
                     Label(Formatters.formatDate(course.createdAt), systemImage: "calendar")
                         .rtBodySmall()
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                     
                     if course.isPublic {
                         Label("공개", systemImage: "globe")
@@ -193,7 +193,7 @@ struct CourseDetailView: View {
                     } else {
                         Label("비공개", systemImage: "lock")
                             .rtBodySmall()
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                     }
                 }
             }
@@ -209,24 +209,44 @@ struct CourseDetailView: View {
                     // 시작점 표시
                     if let firstCoord = course.coordinates.first {
                         Annotation("시작", coordinate: CLLocationCoordinate2D(latitude: firstCoord.lat, longitude: firstCoord.lng)) {
-                            Image(systemName: "flag.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(.rtSuccess)
-                                .padding(6)
-                                .background(Circle().fill(Color.white))
-                                .shadow(radius: 2)
+                            VStack(spacing: 2) {
+                                Image(systemName: "flag.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("시작")
+                                    .font(.caption2.weight(.bold))
+                            }
+                            .foregroundColor(Color(UIColor { t in t.userInterfaceStyle == .dark ? UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1) : UIColor(Color.rtSuccess) }))
+                            .padding(6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(UIColor { t in t.userInterfaceStyle == .dark ? UIColor.white.withAlphaComponent(0.9) : UIColor.white }))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
+                            .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 1)
                         }
                     }
                     
                     // 종료점 표시
                     if let lastCoord = course.coordinates.last, course.coordinates.count > 1 {
                         Annotation("종료", coordinate: CLLocationCoordinate2D(latitude: lastCoord.lat, longitude: lastCoord.lng)) {
-                            Image(systemName: "flag.checkered")
-                                .font(.system(size: 18))
-                                .foregroundColor(.rtError)
-                                .padding(6)
-                                .background(Circle().fill(Color.white))
-                                .shadow(radius: 2)
+                            VStack(spacing: 2) {
+                                Image(systemName: "flag.checkered")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("종료")
+                                    .font(.caption2.weight(.bold))
+                            }
+                            .foregroundColor(Color(UIColor { t in t.userInterfaceStyle == .dark ? UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1) : UIColor(Color.rtError) }))
+                            .padding(6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(UIColor { t in t.userInterfaceStyle == .dark ? UIColor.white.withAlphaComponent(0.9) : UIColor.white }))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8).stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                            )
+                            .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 1)
                         }
                     }
                     
@@ -247,10 +267,20 @@ struct CourseDetailView: View {
                     ForEach(getKilometerMarkers(), id: \.0) { index, coordinate in
                         Annotation("\(index)km", coordinate: coordinate) {
                             Text("\(index)km")
-                                .font(.system(size: 10, weight: .bold))
-                                .padding(4)
-                                .background(Circle().fill(Color.white))
-                                .shadow(radius: 1)
+                                .font(.caption2.weight(.bold))
+                                .foregroundColor(Color(UIColor { trait in
+                                    trait.userInterfaceStyle == .dark ? UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1) : UIColor(Color.rtPrimary)
+                                }))
+                                .padding(6)
+                                .background(
+                                    Circle().fill(Color(UIColor { trait in
+                                        trait.userInterfaceStyle == .dark ? UIColor.white.withAlphaComponent(0.9) : UIColor.white
+                                    }))
+                                )
+                                .overlay(
+                                    Circle().stroke(Color.gray.opacity(0.4), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.25), radius: 1, x: 0, y: 1)
                         }
                     }
                 }
@@ -369,8 +399,8 @@ struct CourseDetailView: View {
                 showSummarySheet = true
             }) {
                 HStack {
-                    Image(systemName: "chart.bar")
-                    Text("코스 요약 보기")
+                    Image(systemName: "arrow.counterclockwise")
+                    Text("코스 복습하기")
                 }
                 .rtBodyLarge()
                 .fontWeight(.medium)
@@ -449,7 +479,7 @@ struct CourseDetailView: View {
                 
                 Text(value)
                     .rtBodyLarge()
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
             .padding(.vertical, 4)
         }
@@ -703,7 +733,7 @@ struct EnhancedStatisticCard: View {
                     
                     Text(title)
                         .rtBodySmall()
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                 }
                 
                 Text(value)
@@ -808,14 +838,14 @@ struct EnhancedElevationChartView: View {
                         if let maxElevation = elevationData.max() {
                             Text("\(Int(maxElevation))m")
                                 .rtCaption()
-                                .foregroundColor(.gray)
+                                .foregroundColor(.secondary)
                                 .padding(.bottom, geometry.size.height - 15)
                         }
                         
                         if let minElevation = elevationData.min() {
                             Text("\(Int(minElevation))m")
                                 .rtCaption()
-                                .foregroundColor(.gray)
+                                .foregroundColor(.secondary)
                         }
                     }
                     
@@ -826,7 +856,7 @@ struct EnhancedElevationChartView: View {
                         Spacer()
                         Text("\(Int(distance / 1000))km")
                             .rtCaption()
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                     }
                 }
                 .padding(.horizontal, 4)
@@ -1001,13 +1031,19 @@ struct EnhancedCourseMapView: UIViewRepresentable {
                     // 킬로미터 마커 스타일 설정
                     let label = UILabel(frame: CGRect(x: 0, y: 0, width: 30, height: 20))
                     label.text = courseAnnotation.title
-                    label.font = UIFont.systemFont(ofSize: 10, weight: .bold)
+                    label.font = UIFont.boldSystemFont(ofSize: 10)
                     label.textAlignment = .center
-                    label.textColor = UIColor(Color.rtPrimary)
-                    label.backgroundColor = .white
+                    label.textColor = UIColor { trait in
+                        trait.userInterfaceStyle == .dark ? UIColor(red: 34/255, green: 34/255, blue: 34/255, alpha: 1) : UIColor(Color.rtPrimary)
+                    }
+                    label.backgroundColor = UIColor { trait in
+                        trait.userInterfaceStyle == .dark ? UIColor.white.withAlphaComponent(0.9) : UIColor.white
+                    }
                     label.layer.cornerRadius = 8
+                    label.layer.borderColor = UIColor.gray.withAlphaComponent(0.4).cgColor
+                    label.layer.borderWidth = 1
                     label.layer.masksToBounds = true
-                    
+
                     annotationView?.contentMode = .scaleAspectFit
                     annotationView?.addSubview(label)
                     annotationView?.frame.size = label.frame.size
@@ -1064,7 +1100,7 @@ struct CourseSummarySheet: View {
                         InfoRow(title: "최저 고도", value: "\(Int(elevationData.min() ?? 0))m")
                     } else {
                         Text("고도 정보가 없습니다")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                     }
                 }
                 
@@ -1105,7 +1141,7 @@ struct CourseSummarySheet: View {
                 Text(title)
                 Spacer()
                 Text(value)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
         }
     }

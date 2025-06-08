@@ -17,7 +17,7 @@ struct LoginView: View {
         NavigationView {
             ZStack {
                 // 배경 색상
-                Color.rtBackground
+                Color.rtBackgroundAdaptive
                     .ignoresSafeArea()
                 
                 // 상단 장식
@@ -47,7 +47,7 @@ struct LoginView: View {
                             .padding(24)
                             .background(
                                 Circle()
-                                    .fill(Color.white)
+                                    .fill(Color.rtCardAdaptive)
                                     .shadow(color: Color.rtPrimary.opacity(0.2), radius: 15, x: 0, y: 5)
                             )
                             .padding(.bottom, 16)
@@ -115,7 +115,7 @@ struct LoginView: View {
                         }
                     }
                     .padding(24)
-                    .background(Color.rtCard)
+                    .background(Color.rtCardAdaptive)
                     .cornerRadius(24)
                     .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
                     .padding(.horizontal, 24)
@@ -171,7 +171,7 @@ struct TextFieldWithIcon: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                .background(Color.white)
+                .background(Color.rtCardAdaptive)
         )
     }
 }
@@ -198,7 +198,7 @@ struct SecureFieldWithIcon: View {
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                .background(Color.white)
+                .background(Color.rtCardAdaptive)
         )
     }
 }

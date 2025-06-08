@@ -196,7 +196,7 @@ struct ExploreTabView: View {
                             }
                             .foregroundColor(sortOption == 2 ? .rtPrimary : .primary)
                         }
-                        .background(Color.white)
+                        .background(Color.rtCardAdaptive)
                         .cornerRadius(16)
                         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                         .padding(.horizontal)
