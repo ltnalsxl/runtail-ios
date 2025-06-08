@@ -101,9 +101,7 @@ struct CourseDetailView: View {
                         statisticsSection
                         
                         // 고도 차트 섹션
-                        if !elevationData.isEmpty {
-                            elevationChartSection
-                        }
+                        elevationChartSection
                         
                         // 액션 버튼 섹션
                         actionButtonsSection
@@ -377,19 +375,27 @@ struct CourseDetailView: View {
                 HStack {
                     Text("고도 프로필")
                         .rtHeading3()
-                    
+
                     Spacer()
-                    
-                    Button(action: {
-                        showElevationChart.toggle()
-                    }) {
-                        Text(showElevationChart ? "접기" : "자세히")
-                            .rtBodySmall()
-                            .foregroundColor(.rtPrimary)
+
+                    if !elevationData.isEmpty {
+                        Button(action: {
+                            showElevationChart.toggle()
+                        }) {
+                            Text(showElevationChart ? "접기" : "자세히")
+                                .rtBodySmall()
+                                .foregroundColor(.rtPrimary)
+                        }
                     }
                 }
-                
-                if showElevationChart {
+
+                if elevationData.isEmpty {
+                    Text("고도 정보가 없습니다")
+                        .rtBodySmall()
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, minHeight: 60)
+                        .padding(.vertical, 8)
+                } else if showElevationChart {
                     EnhancedElevationChartView(elevationData: elevationData, distance: course.distance)
                         .frame(height: 160)
                         .padding(.vertical, 8)
