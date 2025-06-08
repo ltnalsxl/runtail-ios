@@ -356,6 +356,7 @@ struct CourseDetailView: View {
     }
     
     // MARK: - 통계 카드 섹션
+    @ViewBuilder
     var statisticsSection: some View {
         if course.coordinates.isEmpty {
             RTCardView {
