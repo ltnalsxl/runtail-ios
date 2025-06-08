@@ -24,6 +24,7 @@ struct CourseDetailView: View {
     @State private var showElevationChart = false
     @State private var showSummarySheet = false
     @State private var alertMessage: String?
+    @State private var isLoading = true
     
     // 의존성 주입
     @EnvironmentObject var viewModel: MapViewModel
@@ -116,9 +117,23 @@ struct CourseDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .overlay {
+            if isLoading {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                }
+            }
+        }
         .navigationBarHidden(true)
         .onAppear {
-            setupInitialData()
+            isLoading = true
+            DispatchQueue.main.async {
+                setupInitialData()
+                isLoading = false
+            }
         }
         .alert("코스 삭제", isPresented: $showDeleteConfirmation) {
             Button("취소", role: .cancel) {}
