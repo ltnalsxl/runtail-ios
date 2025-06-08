@@ -139,7 +139,7 @@ struct ProfileTabView: View {
                             }
                         }
                     }
-                    .background(Color.white)
+                    .background(Color.rtCardAdaptive)
                     .cornerRadius(28)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                     .padding(.horizontal)
@@ -185,7 +185,7 @@ struct ProfileTabView: View {
                             }
                         }
                     }
-                    .background(Color.white)
+                    .background(Color.rtCardAdaptive)
                     .cornerRadius(28)
                     .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                     .padding(.horizontal)

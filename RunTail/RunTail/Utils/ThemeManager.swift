@@ -24,6 +24,16 @@ extension Color {
     static let rtCard = Color.white
     static let rtBackgroundDark = Color(red: 28/255, green: 28/255, blue: 35/255) // #1C1C23
     static let rtCardDark = Color(red: 38/255, green: 38/255, blue: 45/255) // #26262D
+
+    /// 다크 모드 지원을 위한 동적 배경 색상
+    static let rtBackgroundAdaptive = Color(UIColor {
+        $0.userInterfaceStyle == .dark ? UIColor(Color.rtBackgroundDark) : UIColor(Color.rtBackground)
+    })
+
+    /// 카드용 동적 배경 색상
+    static let rtCardAdaptive = Color(UIColor {
+        $0.userInterfaceStyle == .dark ? UIColor(Color.rtCardDark) : UIColor(Color.rtCard)
+    })
 }
 
 // MARK: - 그라데이션
@@ -137,7 +147,7 @@ struct RTCardView<Content: View>: View {
     var body: some View {
         content
             .padding(16)
-            .background(Color.rtCard)
+            .background(Color.rtCardAdaptive)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 3)
     }

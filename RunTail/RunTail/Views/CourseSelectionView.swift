@@ -45,7 +45,7 @@ struct CourseSelectionView: View {
                     .fontWeight(.semibold)
                 }
                 .padding()
-                .background(Color.white)
+                .background(Color.rtCardAdaptive)
                 .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
                 
                 // 코스 목록

@@ -36,7 +36,7 @@ struct MapView: View {
         GeometryReader { geometry in
             ZStack {
                 // 배경색 - 전체 화면 채우기
-                Color.rtBackground
+                Color.rtBackgroundAdaptive
                     .ignoresSafeArea(.all)
                 
                 // 메인 콘텐츠
@@ -250,7 +250,7 @@ struct FloatingTabBar: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color.rtCard)
+        .background(Color.rtCardAdaptive)
         .cornerRadius(24)
         .shadow(color: Color.black.opacity(0.1), radius: 15, x: 0, y: 5)
         .padding(.horizontal, 16)
