@@ -228,6 +228,23 @@ struct CourseDetailView: View {
     // MARK: - 지도 섹션
     var mapSection: some View {
         RTCardView {
+            if course.coordinates.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 24))
+                        .foregroundColor(.secondary)
+
+                    Text("경로 데이터를 불러올 수 없습니다")
+                        .rtBodySmall()
+                        .foregroundColor(.secondary)
+
+                    Button("새로고침") {
+                        setupInitialData()
+                    }
+                    .rtBodySmall()
+                }
+                .frame(maxWidth: .infinity, minHeight: 250)
+            } else {
             #if swift(>=5.9) // iOS 17 이상
             if #available(iOS 17.0, *) {
                 Map {
@@ -334,51 +351,83 @@ struct CourseDetailView: View {
             .frame(height: 250)
             .cornerRadius(16)
             #endif
+            }
         }
     }
     
     // MARK: - 통계 카드 섹션
     var statisticsSection: some View {
-        HStack(spacing: 16) {
-            // 거리 카드
-            EnhancedStatisticCard(
-                title: "총 거리",
-                value: Formatters.formatDistance(course.distance),
-                icon: "ruler",
-                color: .rtPrimary
-            )
-            
-            // 시간 카드 (예상 시간 - 사용자 평균 페이스 기반)
-            let estimatedTime = Int(course.distance / 1000 * viewModel.getUserAveragePace())
-            EnhancedStatisticCard(
-                title: "예상 시간",
-                value: Formatters.formatDuration(estimatedTime),
-                icon: "clock",
-                color: .rtSecondary
-            )
-            
-            // 고도 차이 카드
-            let elevationGain = calculateElevationGain()
-            EnhancedStatisticCard(
-                title: "고도 변화",
-                value: "\(Int(elevationGain))m",
-                icon: "mountain.2",
-                color: .rtSuccess
-            )
+        if course.coordinates.isEmpty {
+            RTCardView {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 24))
+                        .foregroundColor(.secondary)
+
+                    Text("통계 데이터를 불러올 수 없습니다")
+                        .rtBodySmall()
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        } else {
+            HStack(spacing: 16) {
+                // 거리 카드
+                EnhancedStatisticCard(
+                    title: "총 거리",
+                    value: Formatters.formatDistance(course.distance),
+                    icon: "ruler",
+                    color: .rtPrimary
+                )
+
+                // 시간 카드 (예상 시간 - 사용자 평균 페이스 기반)
+                let estimatedTime = Int(course.distance / 1000 * viewModel.getUserAveragePace())
+                EnhancedStatisticCard(
+                    title: "예상 시간",
+                    value: Formatters.formatDuration(estimatedTime),
+                    icon: "clock",
+                    color: .rtSecondary
+                )
+
+                // 고도 차이 카드
+                let elevationGain = calculateElevationGain()
+                EnhancedStatisticCard(
+                    title: "고도 변화",
+                    value: "\(Int(elevationGain))m",
+                    icon: "mountain.2",
+                    color: .rtSuccess
+                )
+            }
         }
     }
     
     // MARK: - 고도 차트 섹션
     var elevationChartSection: some View {
         RTCardView {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("고도 프로필")
-                        .rtHeading3()
+            if elevationData.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 24))
+                        .foregroundColor(.secondary)
 
-                    Spacer()
+                    Text("고도 데이터를 불러올 수 없습니다")
+                        .rtBodySmall()
+                        .foregroundColor(.secondary)
 
-                    if !elevationData.isEmpty {
+                    Button("새로고침") {
+                        calculateElevationProfile()
+                    }
+                    .rtBodySmall()
+                }
+                .frame(maxWidth: .infinity, minHeight: 80)
+            } else {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("고도 프로필")
+                            .rtHeading3()
+
+                        Spacer()
+
                         Button(action: {
                             showElevationChart.toggle()
                         }) {
@@ -387,22 +436,16 @@ struct CourseDetailView: View {
                                 .foregroundColor(.rtPrimary)
                         }
                     }
-                }
 
-                if elevationData.isEmpty {
-                    Text("고도 정보가 없습니다")
-                        .rtBodySmall()
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity, minHeight: 60)
-                        .padding(.vertical, 8)
-                } else if showElevationChart {
-                    EnhancedElevationChartView(elevationData: elevationData, distance: course.distance)
-                        .frame(height: 160)
-                        .padding(.vertical, 8)
-                } else {
-                    EnhancedElevationMiniChartView(elevationData: elevationData)
-                        .frame(height: 60)
-                        .padding(.vertical, 8)
+                    if showElevationChart {
+                        EnhancedElevationChartView(elevationData: elevationData, distance: course.distance)
+                            .frame(height: 160)
+                            .padding(.vertical, 8)
+                    } else {
+                        EnhancedElevationMiniChartView(elevationData: elevationData)
+                            .frame(height: 60)
+                            .padding(.vertical, 8)
+                    }
                 }
             }
         }
