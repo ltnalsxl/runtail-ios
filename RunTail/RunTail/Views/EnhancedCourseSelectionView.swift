@@ -118,7 +118,7 @@ struct EnhancedCourseSelectionView: View {
             .fontWeight(.semibold)
         }
         .padding()
-        .background(Color.white)
+        .background(Color.rtCardAdaptive)
         .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
     
@@ -170,7 +170,7 @@ struct EnhancedCourseSelectionView: View {
                 .foregroundColor(.gray)
             }
             .padding()
-            .background(Color.white)
+            .background(Color.rtCardAdaptive)
             
             // 지도
             ZStack {

@@ -32,7 +32,7 @@ struct ActivityTabView: View {
                     // 월 선택 달력
                     calendarView
                         .padding(.horizontal)
-                        .background(Color.white)
+                        .background(Color.rtCardAdaptive)
                         .cornerRadius(16)
                         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                         .padding(.horizontal)
@@ -163,7 +163,7 @@ struct ActivityTabView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.white)
+            .background(Color.rtCardAdaptive)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
             
@@ -188,7 +188,7 @@ struct ActivityTabView: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.white)
+            .background(Color.rtCardAdaptive)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         }
@@ -235,7 +235,7 @@ struct ActivityTabView: View {
                 }
                 .padding(.vertical, 40)
                 .frame(maxWidth: .infinity)
-                .background(Color.white)
+                .background(Color.rtCardAdaptive)
                 .cornerRadius(16)
                 .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
                 .padding(.horizontal)
@@ -318,7 +318,7 @@ struct ActivityTabView: View {
                 }
             }
             .padding()
-            .background(Color.white)
+            .background(Color.rtCardAdaptive)
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
         }
