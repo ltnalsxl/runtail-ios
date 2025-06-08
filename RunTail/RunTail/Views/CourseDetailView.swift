@@ -535,7 +535,15 @@ struct CourseDetailView: View {
     
     // 지도 영역 설정
     private func setupMapRegion() {
-        guard !course.coordinates.isEmpty else { return }
+        guard !course.coordinates.isEmpty else {
+            // Use Seoul city center if coordinates fail to load
+            // This acts as a fallback so `region` always has usable values
+            region = MKCoordinateRegion(
+                center: CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780),
+                span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+            )
+            return
+        }
         
         // 좌표의 최소/최대값 찾기
         var minLat = course.coordinates[0].lat
