@@ -84,7 +84,6 @@ struct CourseDetailView: View {
                             
                             Spacer()
                         }
-                    )
                 
                 // 스크롤 가능한 콘텐츠
                 ScrollView {
@@ -151,8 +150,11 @@ struct CourseDetailView: View {
                 onStartRunning: startRunningThisCourse
             )
             .presentationDetents([.medium, .large])
+
         }
     }
+    }
+
     
     // MARK: - 코스 정보 카드
     var courseInfoCard: some View {
