@@ -84,19 +84,14 @@ struct MapView: View {
                 }
                 
                 // 코스 상세 화면으로 이동하기 위한 NavigationLink
-                NavigationLink(
-                    destination: Group {
-                        if let courseId = viewModel.selectedCourseId,
-                           let course = viewModel.getCourse(by: courseId) {
-                            CourseDetailView(course: course)
-                                .environmentObject(viewModel)
-                                .environmentObject(locationService)
-                                .navigationBarHidden(true)
-                        }
-                    },
-                    isActive: $viewModel.showCourseDetailView,
-                    label: { EmptyView() }
-                )
+                              .fullScreenCover(isPresented: $viewModel.showCourseDetailView) {
+                                  if let courseId = viewModel.selectedCourseId,
+                                     let course = viewModel.getCourse(by: courseId) {
+                                      CourseDetailView(course: course)
+                                          .environmentObject(viewModel)
+                                          .environmentObject(locationService)
+                                  }
+                              }
             }
         }
         .navigationBarHidden(true)
