@@ -15,6 +15,7 @@ import Combine
 struct ProfileTabView: View {
     @ObservedObject var viewModel: MapViewModel
     let colorScheme: ColorScheme
+    @State private var showLineup = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -183,6 +184,15 @@ struct ProfileTabView: View {
                             }) {
                                 settingRow(icon: "hand.raised.fill", title: "개인정보 처리방침", iconColor: viewModel.themeColor)
                             }
+
+                            Divider()
+                                .padding(.leading, 56)
+
+                            Button(action: {
+                                showLineup = true
+                            }) {
+                                settingRow(icon: "list.bullet.rectangle", title: "오늘의 라인업", iconColor: viewModel.themeColor)
+                            }
                         }
                     }
                     .background(Color.rtCardAdaptive)
@@ -194,6 +204,9 @@ struct ProfileTabView: View {
             }
         }
         .background(Color(UIColor.systemGroupedBackground))
+        .sheet(isPresented: $showLineup) {
+            LineupView()
+        }
     }
     
     // 설정 행 헬퍼 함수
